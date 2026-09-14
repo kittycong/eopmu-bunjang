@@ -9,3 +9,4 @@ __pycache__/
 /index.html
 names.local.json
 tasks.public.json.bak
+_*.py
