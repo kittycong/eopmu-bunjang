@@ -225,6 +225,29 @@ td.num{text-align:right;color:var(--dim);white-space:nowrap}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin-top:12px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 
+/* ── 연락처 ── */
+.sos{border:1px solid var(--warn);border-left-width:4px;border-radius:10px;background:var(--card);
+     padding:13px 16px;margin-bottom:16px}
+.sos>b{display:block;font-size:12px;color:var(--warn);letter-spacing:.05em;margin-bottom:9px}
+.ctgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:11px}
+.ct{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 13px;position:relative}
+.ct.sosc{border-left:4px solid var(--warn)}
+.ct h4{margin:0 0 3px;font-size:14.5px;padding-right:22px;line-height:1.3}
+.ct .cat{font-size:11px;color:var(--dim);margin-bottom:7px}
+.ct .tel{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+         display:block;margin-bottom:2px;color:var(--keep);text-decoration:none}
+.ct .tel:hover{text-decoration:underline}
+.ct .none2{font-size:12.5px;color:var(--dim);font-style:italic;margin-bottom:2px}
+.ct .em{font-size:12.5px;color:var(--dim);word-break:break-all}
+.ct .memo{font-size:12.5px;color:var(--ink);margin-top:7px;padding-top:7px;border-top:1px solid var(--line)}
+.ct .link2{display:inline-block;font-size:12px;margin-top:7px;color:var(--keep);cursor:pointer}
+.ct .link2:hover{text-decoration:underline}
+.ct .pin{position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;
+         font-size:13px;color:var(--line);padding:2px 4px;line-height:1}
+.ct .pin.on{color:#e8b84b}
+.ct .acts{margin-top:9px;display:flex;gap:5px}
+.ct .acts button{font-size:11.5px;padding:3px 8px}
+
 /* ── 문서함 ── */
 .dcard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
 .dcard.ok{border-color:var(--in)}
@@ -441,6 +464,7 @@ textarea{resize:vertical;min-height:64px}
     <button class="v" data-v="person">사람별</button>
   </div>
   <div class="navgrp"><b>자료</b>
+    <button class="v" data-v="contacts">연락처</button>
     <button class="v" data-v="docs">지침·매뉴얼</button>
   </div>
   <div class="navgrp"><b>출력</b>
@@ -450,6 +474,7 @@ textarea{resize:vertical;min-height:64px}
   <div class="navgrp"><b>작업</b>
     <button id="add">+ 업무</button>
     <button id="addev">+ 일정</button>
+  <button id="addct">+ 연락처</button>
     <button id="exp">JSON 내보내기</button>
     <button id="tsv">표 복사(엑셀)</button>
     <button id="imp">가져오기</button>
@@ -478,6 +503,34 @@ textarea{resize:vertical;min-height:64px}
   <div id="pbody"></div>
   <div class="act" style="margin-top:14px"><button onclick="pdlg.close()">닫기</button></div>
 </dialog>
+
+<dialog id="cdlg"><form method="dialog" id="cform">
+  <h3 id="ctitle" style="margin:0 0 8px;font-size:16px">연락처 추가</h3>
+  <div class="row">
+    <div><label class="f">기관 · 업체명</label><input type="text" name="name" required></div>
+    <div><label class="f">구분</label><select name="cat">
+      <option>관공서</option><option>거래처</option><option>유지보수</option><option>시스템</option>
+      <option>보험</option><option>금융</option><option>시설</option><option>내부</option>
+      <option>응급</option><option>기타</option></select></div>
+  </div>
+  <div class="row">
+    <div><label class="f">담당자</label><input type="text" name="person"></div>
+    <div><label class="f">전화번호</label><input type="text" name="tel" placeholder="02-857-9501"></div>
+  </div>
+  <label class="f">이메일</label><input type="text" name="email">
+  <label class="f">메모 — 무슨 일로 연락하는지 · 만기일 · 계약 조건</label><textarea name="note" style="min-height:56px"></textarea>
+  <label class="f">관련 업무</label><select name="task" id="ctTask"></select>
+  <div class="row" style="margin-top:12px">
+    <label style="display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer">
+      <input type="checkbox" name="emergency">비상연락망에 표시</label>
+    <label style="display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer">
+      <input type="checkbox" name="fav">자주 쓰는 연락처</label>
+  </div>
+  <div class="act" style="margin-top:14px">
+    <button value="ok">저장</button><button value="cancel" formnovalidate>취소</button>
+    <span class="spacer"></span><button value="del" formnovalidate id="cdel" style="color:var(--warn)">삭제</button>
+  </div>
+</form></dialog>
 
 <dialog id="ndlg"><form method="dialog" id="nform">
   <h3 id="ntitle" style="margin:0 0 8px;font-size:16px">일정 추가</h3>
@@ -2956,6 +3009,260 @@ const SEED = {
       "path": "https://chulchang-munseo.vercel.app/",
       "checked": false
     }
+  ],
+  "contacts": [
+    {
+      "id": "c-0",
+      "name": "센터 대표번호",
+      "cat": "내부",
+      "person": "사무국",
+      "tel": "(02)857-9501",
+      "email": "grcil@daum.net",
+      "note": "전송 (02)857-9502 · 주소 (08298) 서울특별시 구로구 가마산로27길 14, 8층(구로동)",
+      "task": "",
+      "emergency": true,
+      "fav": true
+    },
+    {
+      "id": "c-1",
+      "name": "건물 관리사무소",
+      "cat": "시설",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "정전·누수·엘리베이터·출입 통제. 번호 확인 필요",
+      "task": "",
+      "emergency": true,
+      "fav": false
+    },
+    {
+      "id": "c-119",
+      "name": "소방·구급",
+      "cat": "응급",
+      "person": "",
+      "tel": "119",
+      "email": "",
+      "note": "이용자·활동지원사 응급상황. 사고 발생 시 센터 보고 절차 함께 확인",
+      "task": "",
+      "emergency": true,
+      "fav": false
+    },
+    {
+      "id": "c-112",
+      "name": "경찰",
+      "cat": "응급",
+      "person": "",
+      "tel": "112",
+      "email": "",
+      "note": "범죄·안전 신고",
+      "task": "",
+      "emergency": true,
+      "fav": false
+    },
+    {
+      "id": "c-3",
+      "name": "㈜웹모아",
+      "cat": "유지보수",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "홈페이지 grcil.kr 호스팅·유지보수. 게시물 등록·수정은 WIMS 게시판으로 요청. 도메인·유지보수 연장 11월 28일",
+      "task": "o-homepage",
+      "emergency": true,
+      "fav": true
+    },
+    {
+      "id": "c-4",
+      "name": "진우정보시스템",
+      "cat": "유지보수",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "활동지원사 급여시스템(진우). 연장 계약 3월 11일",
+      "task": "",
+      "emergency": true,
+      "fav": true
+    },
+    {
+      "id": "c-5",
+      "name": "보탬e 헬프데스크",
+      "cat": "시스템",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "보조금 집행·정산 시스템. 사무국직원 급여지급·회계 처리에 사용",
+      "task": "i-geupyeo",
+      "emergency": false,
+      "fav": true
+    },
+    {
+      "id": "c-6",
+      "name": "홈택스",
+      "cat": "시스템",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "원천세·지방소득세(매월 10일), 기타소득 지급명세서(2월 말), 연말정산(3월 10일)",
+      "task": "",
+      "emergency": false,
+      "fav": true
+    },
+    {
+      "id": "c-7",
+      "name": "고용산재토탈서비스",
+      "cat": "시스템",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "사회보험 취득·상실 신고(매월 14일까지), 보수총액신고(3월 14일)",
+      "task": "i-saboheom-singo",
+      "emergency": false,
+      "fav": true
+    },
+    {
+      "id": "c-8",
+      "name": "공동인증서 발급기관",
+      "cat": "시스템",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "만기 4월 4일. 놓치면 보탬e·홈택스·인터넷뱅킹 전부 막힘",
+      "task": "i-injeungseo",
+      "emergency": true,
+      "fav": true
+    },
+    {
+      "id": "c-9",
+      "name": "구로구청 장애인복지과",
+      "cat": "관공서",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "보조금 교부·정산, 지도점검, 처우개선비, 장애인복지기금",
+      "task": "k-jungjeung-acc",
+      "emergency": true,
+      "fav": true
+    },
+    {
+      "id": "c-10",
+      "name": "국민건강보험공단",
+      "cat": "관공서",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "사회보험 관련",
+      "task": "",
+      "emergency": false,
+      "fav": false
+    },
+    {
+      "id": "c-11",
+      "name": "국민연금공단",
+      "cat": "관공서",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "사회보험 관련",
+      "task": "",
+      "emergency": false,
+      "fav": false
+    },
+    {
+      "id": "c-12",
+      "name": "한국장애인고용공단",
+      "cat": "관공서",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "장애인고용부담금·고용현황 신고 1월 31일 (E신고)",
+      "task": "c-singo",
+      "emergency": false,
+      "fav": false
+    },
+    {
+      "id": "c-13",
+      "name": "고용노동부",
+      "cat": "관공서",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "사업체노동력조사 매월 12일까지",
+      "task": "",
+      "emergency": false,
+      "fav": false
+    },
+    {
+      "id": "c-14",
+      "name": "기업은행",
+      "cat": "금융",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "퇴직연금 부담금 이체(매월 14일), 지급 신청(매월 16일), 인터넷뱅킹",
+      "task": "",
+      "emergency": false,
+      "fav": true
+    },
+    {
+      "id": "c-15",
+      "name": "한국사회복지공제회",
+      "cat": "보험",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "복지시설 종합안전배상공제(4월 15일), 단체상해공제(11월 9일)",
+      "task": "",
+      "emergency": false,
+      "fav": false
+    },
+    {
+      "id": "c-16",
+      "name": "SGI서울보증",
+      "cat": "보험",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "신원보증보험 — 자립생활주택 코디, 사무국 회계담당·간부(11월 28일)",
+      "task": "",
+      "emergency": false,
+      "fav": false
+    },
+    {
+      "id": "c-17",
+      "name": "메리츠화재",
+      "cat": "보험",
+      "person": "",
+      "tel": "[연락처 비공개]",
+      "email": "",
+      "note": "화재보험 — 사무실 8층(12/30)·5층(7/22), 자립생활주택 가형(12/19)·다형1(7/3)·다형2(9/12)",
+      "task": "",
+      "emergency": false,
+      "fav": true
+    },
+    {
+      "id": "c-18",
+      "name": "장블랑제리 (해피피플)",
+      "cat": "거래처",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "빵 후원. 매월 거래명세 검증 후 물품수령증 발급·날인",
+      "task": "k-bread",
+      "emergency": false,
+      "fav": true
+    },
+    {
+      "id": "c-19",
+      "name": "구로시민센터",
+      "cat": "거래처",
+      "person": "",
+      "tel": "",
+      "email": "",
+      "note": "후원 CMS 자동이체 신청 관리",
+      "task": "o-huwon-cms",
+      "emergency": false,
+      "fav": false
+    }
   ]
 };
 const KEY = "eopmu_bunjang_pub_v2";
@@ -3002,13 +3309,15 @@ function render(){
     + "  |  전체 " + t.length + "건 — 유지 " + n("keep") + " / 인계 " + n("out") + " / 인수 " + n("in")
     + " / 공통 " + n("common") + " / 미정 " + n("tbd")
     + "  |  절차·기록 있는 업무 " + logged + "건"
-    + "  |  센터 일정 " + EVENTS().length + "건 · 지침·매뉴얼 " + DOCS().length + "건";
+    + "  |  센터 일정 " + EVENTS().length + "건 · 지침·매뉴얼 " + DOCS().length + "건"
+    + " · 연락처 " + CONTACTS().length + "건";
   if(view==="dash"){ main.innerHTML = viewDash(); return; }
   if(view==="all"){ main.innerHTML = viewAll(); return; }
   if(view==="shift"){ main.innerHTML = viewShift(); return; }
   if(view==="cal"){ main.innerHTML = viewCalendar(); return; }
   if(view==="events"){ main.innerHTML = viewEvents(); return; }
   if(view==="docs"){ main.innerHTML = viewDocs(); return; }
+  if(view==="contacts"){ main.innerHTML = viewContacts(); return; }
   if(view==="person" || view==="dept" || view==="org"){
     main.innerHTML = view==="person" ? viewPerson() : view==="dept" ? viewDept() : viewOrg();
     return;
@@ -3172,6 +3481,80 @@ function parseDeadline(s){
   if(!out.length) out.push({kind:"other", text:s});
   return out;
 }
+/* ─────────── 연락처 · 비상연락망 ─────────── */
+const CONTACTS = () => DB.contacts || (DB.contacts = []);
+const byCid = id => CONTACTS().filter(c=>c.id===id)[0];
+let ctCat = "all", editingCt = null;
+
+// 전화번호는 눌러서 바로 걸 수 있게 tel: 로 건다 (119 / 112 같은 짧은 번호 포함)
+const telHref = t => 'tel:' + String(t).replace(/[^0-9+]/g, '');
+
+function ctCard(c, compact){
+  const t = c.task ? byId(c.task) : null;
+  return '<div class="ct' + (c.emergency ? ' sosc' : '') + '">'
+    + '<button class="pin' + (c.fav ? ' on' : '') + '" data-ctfav="' + c.id + '" title="자주 쓰는 연락처">★</button>'
+    + '<h4>' + esc(c.name) + '</h4>'
+    + '<div class="cat">' + esc(c.cat) + (c.person ? ' · ' + esc(c.person) : '') + '</div>'
+    + (c.tel ? '<a class="tel" href="' + esc(telHref(c.tel)) + '">' + esc(c.tel) + '</a>'
+             : '<div class="none2">번호 미등록 — 확인 후 입력</div>')
+    + (c.email ? '<div class="em">' + esc(c.email) + '</div>' : '')
+    + (!compact && c.note ? '<div class="memo">' + esc(c.note) + '</div>' : '')
+    + (!compact && t ? '<span class="link2" data-task="' + t.id + '">관련 업무 · ' + esc(t.name) + '</span>' : '')
+    + (!compact ? '<div class="acts"><button data-ctedit="' + c.id + '">편집</button></div>' : '')
+    + '</div>';
+}
+
+function viewContacts(){
+  let list = CONTACTS().slice();
+  if(query){ const q = query.toLowerCase(); list = list.filter(c=>JSON.stringify(c).toLowerCase().indexOf(q) >= 0); }
+  const sos = list.filter(c=>c.emergency);
+  const fav = list.filter(c=>c.fav && !c.emergency);
+  const rest = list.filter(c=>!c.fav && !c.emergency);
+  const cats = {}; CONTACTS().forEach(c=>cats[c.cat] = (cats[c.cat]||0)+1);
+  const shown = ctCat === "all" ? rest : rest.filter(c=>c.cat === ctCat);
+
+  const tabs = '<div class="bar"><button data-ct="all"' + (ctCat==="all"?' class="on"':'') + '>전체 ' + rest.length + '</button>'
+    + Object.keys(cats).sort().map(k=>'<button data-ct="' + esc(k) + '"' + (ctCat===k?' class="on"':'') + '>'
+        + esc(k) + ' ' + cats[k] + '</button>').join('') + '</div>';
+
+  return (sos.length
+      ? '<div class="sos"><b>비상 연락 — 먼저 볼 것</b><div class="ctgrid">'
+        + sos.map(c=>ctCard(c)).join('') + '</div></div>' : '')
+    + (fav.length
+      ? '<div class="panel" style="margin-bottom:14px"><h3>자주 쓰는 곳 <small>' + fav.length + '건</small></h3>'
+        + '<div class="ctgrid">' + fav.map(c=>ctCard(c)).join('') + '</div></div>' : '')
+    + tabs
+    + (shown.length ? '<div class="ctgrid">' + shown.map(c=>ctCard(c)).join('') + '</div>'
+                    : '<div class="empty">해당 연락처 없음</div>');
+}
+
+function openContact(c){
+  editingCt = c || null;
+  ctitle.textContent = c ? '연락처 편집' : '연락처 추가';
+  cdel.style.display = c ? '' : 'none';
+  const f = cform, g = (k,d)=> (c && c[k] != null) ? c[k] : d;
+  f.name.value = g('name',''); f.cat.value = g('cat','거래처'); f.person.value = g('person','');
+  f.tel.value = g('tel',''); f.email.value = g('email',''); f.note.value = g('note','');
+  f.emergency.checked = !!g('emergency', false); f.fav.checked = !!g('fav', false);
+  ctTask.innerHTML = '<option value="">— 연결 안 함 —</option>'
+    + DB.tasks.map(t=>'<option value="' + t.id + '">' + esc(t.name) + '</option>').join('');
+  ctTask.value = g('task','');
+  cdlg.showModal();
+}
+cdlg.addEventListener("close", ()=>{
+  const v = cdlg.returnValue, f = cform;
+  if(v === "del"){ if(editingCt && confirm('이 연락처를 삭제할까요?')){
+    DB.contacts = CONTACTS().filter(x=>x !== editingCt); save(); } return; }
+  if(v !== "ok") return;
+  const d = {name:f.name.value.trim(), cat:f.cat.value, person:f.person.value.trim(),
+    tel:f.tel.value.trim(), email:f.email.value.trim(), note:f.note.value.trim(),
+    task:ctTask.value, emergency:f.emergency.checked, fav:f.fav.checked};
+  if(editingCt) Object.assign(editingCt, d);
+  else CONTACTS().push(Object.assign({id:'c-new-' + Date.now()}, d));
+  save();
+});
+addct.onclick = ()=>openContact(null);
+
 /* ─────────── 캘린더 · 일정 · 문서함 ─────────── */
 const EVENTS = () => DB.events || [];
 const DOCS   = () => DB.docs || [];
@@ -3902,6 +4285,12 @@ document.addEventListener("click", e=>{
       if(!calWho.size || calWho.size === tally.length) calWho = null;
     }
     render(); return; }
+  const cf = e.target.closest("[data-ctfav]");
+  if(cf){ const c = byCid(cf.dataset.ctfav); if(c){ c.fav = !c.fav; save(); } return; }
+  const ce = e.target.closest("[data-ctedit]");
+  if(ce){ openContact(byCid(ce.dataset.ctedit)); return; }
+  const cc = e.target.closest("[data-ct]");
+  if(cc){ ctCat = cc.dataset.ct; render(); return; }
   const ne = e.target.closest("[data-newev]");
   if(ne && !e.target.closest(".ev")){ openEventForm(null, ne.dataset.newev); return; }
   const ee = e.target.closest("[data-evedit]");
