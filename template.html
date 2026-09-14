@@ -522,6 +522,7 @@ textarea{resize:vertical;min-height:64px}
   <button data-f="common">공통</button>
   <button data-f="tbd">미정</button>
   <button data-f="other">타 담당</button>
+  <button data-f="final" style="border-color:#0f766e;color:#0f766e">최종분장</button>
   <input id="q" type="text" placeholder="검색…">
 </div>
 
@@ -680,6 +681,7 @@ textarea{resize:vertical;min-height:64px}
   <div class="row">
     <div><label class="f">서버 폴더</label><select name="folder" id="folderSel"></select></div>
     <div><label class="f">주기</label><input type="text" name="cycle" placeholder="매일/매월/분기/연1회/수시"></div>
+    <div><label class="f">중요도</label><input type="text" name="prio" placeholder="1 / 2 / 5"></div>
   </div>
   <div class="row">
     <div><label class="f">인수인계 구분</label><select name="type">
@@ -772,7 +774,9 @@ const today = () => new Date().toISOString().slice(0,10);
 const byId = id => DB.tasks.filter(t=>t.id===id)[0];
 
 function visible(){
-  let list = filter==="all" ? DB.tasks.slice() : DB.tasks.filter(x=>x.type===filter);
+  let list = filter==="all" ? DB.tasks.slice()
+    : filter==="final" ? DB.tasks.filter(x=>x.final)
+    : DB.tasks.filter(x=>x.type===filter);
   if(whoFilter) list = list.filter(t=>taskOfWho(t, whoFilter));
   if(catFilter !== "all"){
     list = CATGROUP[catFilter]
@@ -867,6 +871,8 @@ function card(x){
     + '<h2>'+esc(x.name)+'</h2>'
     + '<div class="chips">'
       + '<span class="chip '+x.type+'">'+TN[x.type]+(x.counterpart?' · '+esc(x.counterpart):'')+'</span>'
+      + (x.final?'<span class="chip fin">최종분장</span>':'')
+      + (x.prio?'<span class="chip prio">중요도 '+esc(x.prio)+'</span>':'')
       + stChip(x)
       + (x.cat?'<span class="chip">'+esc(catGroupOf(x.cat))+' · '+esc(x.cat)+(x.sub?' · '+esc(x.sub):'')+'</span>':'')
       + (x.cycle?'<span class="chip">'+esc(x.cycle)+'</span>':'')
@@ -892,7 +898,7 @@ function card(x){
 /* ─────────── 보기 2: 표 ─────────── */
 const COLS = [
   ["type","구분"], ["cat","분야"], ["name","업무명"], ["cycle","주기"],
-  ["_grp","대분류"], ["sub","세부분야"], ["deadline","기한"], ["counterpart","상대방"], ["systems","시스템"],
+  ["_grp","대분류"], ["sub","세부분야"], ["prio","중요도"], ["deadline","기한"], ["counterpart","상대방"], ["systems","시스템"],
   ["_files","관련 문서"], ["_shots","캡처"], ["_steps","절차"], ["_log","기록"]
 ];
 function cellval(x,k){
@@ -920,6 +926,7 @@ function viewTable(list){
       + '<td>'+esc(x.cat)+'</td>'
       + '<td><small>'+esc(catGroupOf(x.cat))+'</small></td>'
       + '<td><small>'+(esc(x.sub||'')||'–')+'</small></td>'
+      + '<td class="num">'+(esc(x.prio||'')||'–')+'</td>'
       + '<td class="nm" data-task="'+x.id+'">'+esc(x.name)+'</td>'
       + '<td>'+esc(x.cycle)+'</td>'
       + '<td class="'+(x.deadline?'warn':'')+'">'+esc(x.deadline)+'</td>'
@@ -1770,6 +1777,8 @@ function openTask(id){
   tbody.innerHTML = '<h3>'+esc(x.name)+'</h3>'
     + '<div class="meta">'
       + '<span class="chip '+x.type+'">'+TN[x.type]+(x.counterpart?' · '+esc(x.counterpart):'')+'</span>'
+      + (x.final?'<span class="chip fin">최종분장</span>':'')
+      + (x.prio?'<span class="chip prio">중요도 '+esc(x.prio)+'</span>':'')
       + stChip(x)
       + (x.cat?'<span class="chip">'+esc(x.cat)+'</span>':'')
       + (x.cycle?'<span class="chip">'+esc(x.cycle)+'</span>':'')
@@ -2157,7 +2166,7 @@ function open(x){
   };
   fillSub(); fillFolder();
   catSel.onchange = ()=>{ fillSub(); fillFolder(); };
-  f.cycle.value=v("cycle",""); f.type.value=v("type","keep"); f.counterpart.value=v("counterpart","");
+  f.cycle.value=v("cycle",""); f.prio.value=v("prio",""); f.type.value=v("type","keep"); f.counterpart.value=v("counterpart","");
   f.deadline.value=v("deadline",""); f.systems.value=(v("systems",[])).join(", ");
   f.status.value=v("status", DEFSTAT[v("type","keep")]||"미착수");
   f.next.value=(v("next",[])).join(String.fromCharCode(10));
@@ -2173,7 +2182,7 @@ dlg.addEventListener("close", ()=>{
   if(val==="del"){ if(editing && confirm("삭제?")){ DB.tasks = DB.tasks.filter(t=>t!==editing); save(); } return; }
   if(val!=="ok") return;
   const data = {name:f.name.value.trim(), desc:f.desc.value.trim(), cat:f.cat.value.trim(),
-    sub:f.sub.value, folder:f.folder.value,
+    sub:f.sub.value, folder:f.folder.value, prio:f.prio.value.trim(),
     cycle:f.cycle.value.trim(), type:f.type.value, counterpart:f.counterpart.value.trim(),
     deadline:f.deadline.value.trim(), systems:C(f.systems.value),
     status:f.status.value, next:L(f.next.value),

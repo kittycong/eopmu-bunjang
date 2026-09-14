@@ -522,6 +522,7 @@ textarea{resize:vertical;min-height:64px}
   <button data-f="common">공통</button>
   <button data-f="tbd">미정</button>
   <button data-f="other">타 담당</button>
+  <button data-f="final" style="border-color:#0f766e;color:#0f766e">최종분장</button>
   <input id="q" type="text" placeholder="검색…">
 </div>
 
@@ -680,6 +681,7 @@ textarea{resize:vertical;min-height:64px}
   <div class="row">
     <div><label class="f">서버 폴더</label><select name="folder" id="folderSel"></select></div>
     <div><label class="f">주기</label><input type="text" name="cycle" placeholder="매일/매월/분기/연1회/수시"></div>
+    <div><label class="f">중요도</label><input type="text" name="prio" placeholder="1 / 2 / 5"></div>
   </div>
   <div class="row">
     <div><label class="f">인수인계 구분</label><select name="type">
@@ -732,7 +734,7 @@ const SEED = {
   "tasks": [
     {
       "id": "k-bokjigigum-acc",
-      "name": "복지기금 회계관리",
+      "name": "장애인복지기금 회계관리",
       "cat": "회계",
       "type": "keep",
       "counterpart": "",
@@ -746,6 +748,9 @@ const SEED = {
       "log": [],
       "done": [],
       "files": [],
+      "prio": 5,
+      "owner": "김O원",
+      "final": true,
       "shots": []
     },
     {
@@ -764,6 +769,8 @@ const SEED = {
       "log": [],
       "done": [],
       "files": [],
+      "owner": "김O원",
+      "final": true,
       "shots": []
     },
     {
@@ -781,6 +788,7 @@ const SEED = {
       "steps": [],
       "assets": [],
       "traps": [
+        "⚠ 최종 분장표에 별도 표기 없음 — 서울시·구비 재원과 중복인지 확인",
         "'업무분담' 시트는 26년 담당=조O민, 10월=김O원으로 인수 처리. '2026.09.01.' 시트는 이미 김O원 담당으로 기재 — 실제로는 이미 수행 중이면 keep, 10월부터면 in 으로 바꿀 것"
       ],
       "log": [],
@@ -1008,6 +1016,8 @@ const SEED = {
       "log": [],
       "done": [],
       "files": [],
+      "prio": 5,
+      "final": true,
       "shots": []
     },
     {
@@ -1030,6 +1040,8 @@ const SEED = {
       "log": [],
       "done": [],
       "files": [],
+      "prio": 5,
+      "final": true,
       "shots": []
     },
     {
@@ -1048,6 +1060,8 @@ const SEED = {
       "log": [],
       "done": [],
       "files": [],
+      "prio": 5,
+      "final": true,
       "shots": []
     },
     {
@@ -1072,6 +1086,8 @@ const SEED = {
       "done": [],
       "files": [],
       "sub": "후원·상품권",
+      "prio": 5,
+      "final": true,
       "shots": []
     },
     {
@@ -1091,6 +1107,7 @@ const SEED = {
         "문서생성 시스템 [물품수령증] — 후원물품 수령증 · 품목표 + 사진 첨부 · https://chulchang-munseo.vercel.app/"
       ],
       "traps": [
+        "⚠ 최종 분장표의 «후원 최O연»에 포함되는지 확인 (현재 김O리 인계)",
         "빵 / 빵 외 경계로 담당이 갈림 — 수령증 발급 주체 혼동 주의",
         "물품 후원은 후원금과 별개 장부·별개 보고 — 후원금 결과보고에 섞지 말 것"
       ],
@@ -1138,6 +1155,8 @@ const SEED = {
       "log": [],
       "done": [],
       "files": [],
+      "prio": 5,
+      "final": true,
       "shots": []
     },
     {
@@ -1159,11 +1178,13 @@ const SEED = {
       "done": [],
       "files": [],
       "sub": "문서·공문",
+      "prio": 5,
+      "final": true,
       "shots": []
     },
     {
       "id": "o-charyang",
-      "name": "차량관리",
+      "name": "차량일지 · 차량관리",
       "cat": "총무",
       "type": "out",
       "counterpart": "최O연",
@@ -1189,7 +1210,8 @@ const SEED = {
         "차량 점검관리대장.xlsx"
       ],
       "shots": [],
-      "sub": "차량"
+      "sub": "차량",
+      "final": true
     },
     {
       "id": "o-homepage",
@@ -1239,11 +1261,14 @@ const SEED = {
       "log": [],
       "done": [],
       "files": [],
+      "prio": 2,
+      "owner": "김O원",
+      "final": true,
       "shots": []
     },
     {
       "id": "i-geupyeo",
-      "name": "사무국직원 급여 지급",
+      "name": "급여 (사무국직원)",
       "cat": "인사",
       "type": "in",
       "counterpart": "조O민",
@@ -1262,6 +1287,9 @@ const SEED = {
       "log": [],
       "done": [],
       "files": [],
+      "prio": 1,
+      "owner": "김O원",
+      "final": true,
       "shots": []
     },
     {
@@ -1277,6 +1305,7 @@ const SEED = {
       "steps": [],
       "assets": [],
       "traps": [
+        "⚠ 최종 분장표에 없음 — 담당 확인 필요",
         "기존 계약서 원본 보관 위치 인수받을 것"
       ],
       "log": [],
@@ -1288,8 +1317,8 @@ const SEED = {
       "id": "i-beomjoe",
       "name": "사무국 직원 범죄경력조회",
       "cat": "인사",
-      "type": "in",
-      "counterpart": "조O민",
+      "type": "other",
+      "counterpart": "최O연",
       "cycle": "연 1회",
       "deadline": "",
       "desc": "범죄경력·장애인학대 관련 경력 조회. 기존 근로자는 연 1회 센터가 조회, 신규 입사자는 입사자 본인이 조회.",
@@ -1302,6 +1331,10 @@ const SEED = {
       "log": [],
       "done": [],
       "files": [],
+      "owner": "최O연",
+      "prio": "",
+      "status": "미착수",
+      "final": true,
       "shots": []
     },
     {
@@ -1317,6 +1350,7 @@ const SEED = {
       "steps": [],
       "assets": [],
       "traps": [
+        "⚠ 최종 분장표에 없음 — 담당 확인 필요",
         "'신고 및 보고' 시트상 사회보험료정산 담당은 '공통'"
       ],
       "log": [],
@@ -1339,6 +1373,7 @@ const SEED = {
       "steps": [],
       "assets": [],
       "traps": [
+        "⚠ 최종 분장표에 없음 — 담당 확인 필요",
         "공동 담당 — 누가 어느 대상(사무국/활동지원사)을 맡는지 경계 먼저 정할 것",
         "보수총액신고 3월 14일까지(고용산재, 공통)"
       ],
@@ -1364,6 +1399,7 @@ const SEED = {
         "문서생성 시스템 [물품구매(내부기안)] — 내부기안 + 산출기초조사서 + 비교견적 3곳 · https://chulchang-munseo.vercel.app/"
       ],
       "traps": [
+        "⚠ 최종 분장표에 없음 — 담당 확인 필요",
         "기존 '물품관리담당'과 범위 중복 확인",
         "재물조사 대장 인수받을 것"
       ],
@@ -1385,7 +1421,9 @@ const SEED = {
       "systems": [],
       "steps": [],
       "assets": [],
-      "traps": [],
+      "traps": [
+        "⚠ 최종 분장표에 없음 — 담당 확인 필요"
+      ],
       "log": [],
       "done": [],
       "files": [],
@@ -1405,6 +1443,7 @@ const SEED = {
       "steps": [],
       "assets": [],
       "traps": [
+        "⚠ 최종 분장표에 없음 — 담당 확인 필요 (4월 4일 만기, 누락 시 시스템 전면 중단)",
         "만기 놓치면 보탬E·홈텍스·인터넷뱅킹 전부 막힘 — 최우선 인수 항목"
       ],
       "log": [],
@@ -1426,6 +1465,7 @@ const SEED = {
       "steps": [],
       "assets": [],
       "traps": [
+        "⚠ 최종 분장표에 없음 — 차량일지가 최O연이면 함께 가는지 확인",
         "⚠ 차량관리 본체는 최O연에게 인계하는데 보험 갱신만 김O원으로 표기됨 — 담당 확정 필요",
         "스타렉스 10월 24일 만기 — 재분장 직후 도래"
       ],
@@ -1773,6 +1813,158 @@ const SEED = {
       "files": [],
       "sub": "문서·공문",
       "shots": []
+    },
+    {
+      "id": "k-seoul",
+      "name": "서울시 재원 회계관리",
+      "cat": "회계",
+      "sub": "",
+      "type": "keep",
+      "owner": "김O원",
+      "counterpart": "",
+      "cycle": "수시",
+      "deadline": "",
+      "desc": "서울시 보조금 재원 입출 업무 및 회계관리.",
+      "status": "진행중",
+      "prio": 5,
+      "final": true,
+      "systems": [],
+      "steps": [],
+      "files": [],
+      "shots": [],
+      "assets": [],
+      "traps": [
+        "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
+      ],
+      "next": [],
+      "log": [],
+      "done": []
+    },
+    {
+      "id": "k-gubi",
+      "name": "구비 재원 회계관리",
+      "cat": "회계",
+      "sub": "",
+      "type": "keep",
+      "owner": "김O원",
+      "counterpart": "",
+      "cycle": "수시",
+      "deadline": "",
+      "desc": "구비(구 보조금) 재원 입출 업무 및 회계관리.",
+      "status": "진행중",
+      "prio": 5,
+      "final": true,
+      "systems": [],
+      "steps": [],
+      "files": [],
+      "shots": [],
+      "assets": [],
+      "traps": [
+        "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
+      ],
+      "next": [],
+      "log": [],
+      "done": []
+    },
+    {
+      "id": "k-yesugeum",
+      "name": "예수금 회계관리",
+      "cat": "회계",
+      "sub": "",
+      "type": "keep",
+      "owner": "김O원",
+      "counterpart": "",
+      "cycle": "수시",
+      "deadline": "",
+      "desc": "예수금 계정 관리 — 원천징수분 등 예수·지급 대사.",
+      "status": "진행중",
+      "prio": 5,
+      "final": true,
+      "systems": [],
+      "steps": [],
+      "files": [],
+      "shots": [],
+      "assets": [],
+      "traps": [
+        "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
+      ],
+      "next": [],
+      "log": [],
+      "done": []
+    },
+    {
+      "id": "k-jayul",
+      "name": "자율재원 회계관리",
+      "cat": "회계",
+      "sub": "",
+      "type": "keep",
+      "owner": "김O원",
+      "counterpart": "",
+      "cycle": "수시",
+      "deadline": "",
+      "desc": "자율재원 입출 업무 및 회계관리.",
+      "status": "진행중",
+      "prio": 5,
+      "final": true,
+      "systems": [],
+      "steps": [],
+      "files": [],
+      "shots": [],
+      "assets": [],
+      "traps": [
+        "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
+      ],
+      "next": [],
+      "log": [],
+      "done": []
+    },
+    {
+      "id": "x-jutaek3",
+      "name": "주택 3개소 회계관리 (공공요금 제외)",
+      "cat": "회계",
+      "sub": "",
+      "type": "other",
+      "owner": "최O연",
+      "counterpart": "최O연",
+      "cycle": "수시",
+      "deadline": "",
+      "desc": "자립생활주택 가형·다형1·다형2 입출 업무 및 회계관리. 공공요금은 제외.",
+      "status": "미착수",
+      "prio": 5,
+      "final": true,
+      "systems": [],
+      "steps": [],
+      "files": [],
+      "shots": [],
+      "assets": [],
+      "traps": [],
+      "next": [],
+      "log": [],
+      "done": []
+    },
+    {
+      "id": "x-toejik",
+      "name": "퇴직금 · 기타소득 · 퇴사자 정산",
+      "cat": "회계",
+      "sub": "",
+      "type": "other",
+      "owner": "최O연",
+      "counterpart": "최O연",
+      "cycle": "수시",
+      "deadline": "",
+      "desc": "퇴직금, 기타소득 지급·신고, 퇴사자 정산.",
+      "status": "미착수",
+      "prio": "1,2",
+      "final": true,
+      "systems": [],
+      "steps": [],
+      "files": [],
+      "shots": [],
+      "assets": [],
+      "traps": [],
+      "next": [],
+      "log": [],
+      "done": []
     }
   ],
   "people": [
@@ -3446,7 +3638,9 @@ const today = () => new Date().toISOString().slice(0,10);
 const byId = id => DB.tasks.filter(t=>t.id===id)[0];
 
 function visible(){
-  let list = filter==="all" ? DB.tasks.slice() : DB.tasks.filter(x=>x.type===filter);
+  let list = filter==="all" ? DB.tasks.slice()
+    : filter==="final" ? DB.tasks.filter(x=>x.final)
+    : DB.tasks.filter(x=>x.type===filter);
   if(whoFilter) list = list.filter(t=>taskOfWho(t, whoFilter));
   if(catFilter !== "all"){
     list = CATGROUP[catFilter]
@@ -3541,6 +3735,8 @@ function card(x){
     + '<h2>'+esc(x.name)+'</h2>'
     + '<div class="chips">'
       + '<span class="chip '+x.type+'">'+TN[x.type]+(x.counterpart?' · '+esc(x.counterpart):'')+'</span>'
+      + (x.final?'<span class="chip fin">최종분장</span>':'')
+      + (x.prio?'<span class="chip prio">중요도 '+esc(x.prio)+'</span>':'')
       + stChip(x)
       + (x.cat?'<span class="chip">'+esc(catGroupOf(x.cat))+' · '+esc(x.cat)+(x.sub?' · '+esc(x.sub):'')+'</span>':'')
       + (x.cycle?'<span class="chip">'+esc(x.cycle)+'</span>':'')
@@ -3566,7 +3762,7 @@ function card(x){
 /* ─────────── 보기 2: 표 ─────────── */
 const COLS = [
   ["type","구분"], ["cat","분야"], ["name","업무명"], ["cycle","주기"],
-  ["_grp","대분류"], ["sub","세부분야"], ["deadline","기한"], ["counterpart","상대방"], ["systems","시스템"],
+  ["_grp","대분류"], ["sub","세부분야"], ["prio","중요도"], ["deadline","기한"], ["counterpart","상대방"], ["systems","시스템"],
   ["_files","관련 문서"], ["_shots","캡처"], ["_steps","절차"], ["_log","기록"]
 ];
 function cellval(x,k){
@@ -3594,6 +3790,7 @@ function viewTable(list){
       + '<td>'+esc(x.cat)+'</td>'
       + '<td><small>'+esc(catGroupOf(x.cat))+'</small></td>'
       + '<td><small>'+(esc(x.sub||'')||'–')+'</small></td>'
+      + '<td class="num">'+(esc(x.prio||'')||'–')+'</td>'
       + '<td class="nm" data-task="'+x.id+'">'+esc(x.name)+'</td>'
       + '<td>'+esc(x.cycle)+'</td>'
       + '<td class="'+(x.deadline?'warn':'')+'">'+esc(x.deadline)+'</td>'
@@ -4444,6 +4641,8 @@ function openTask(id){
   tbody.innerHTML = '<h3>'+esc(x.name)+'</h3>'
     + '<div class="meta">'
       + '<span class="chip '+x.type+'">'+TN[x.type]+(x.counterpart?' · '+esc(x.counterpart):'')+'</span>'
+      + (x.final?'<span class="chip fin">최종분장</span>':'')
+      + (x.prio?'<span class="chip prio">중요도 '+esc(x.prio)+'</span>':'')
       + stChip(x)
       + (x.cat?'<span class="chip">'+esc(x.cat)+'</span>':'')
       + (x.cycle?'<span class="chip">'+esc(x.cycle)+'</span>':'')
@@ -4831,7 +5030,7 @@ function open(x){
   };
   fillSub(); fillFolder();
   catSel.onchange = ()=>{ fillSub(); fillFolder(); };
-  f.cycle.value=v("cycle",""); f.type.value=v("type","keep"); f.counterpart.value=v("counterpart","");
+  f.cycle.value=v("cycle",""); f.prio.value=v("prio",""); f.type.value=v("type","keep"); f.counterpart.value=v("counterpart","");
   f.deadline.value=v("deadline",""); f.systems.value=(v("systems",[])).join(", ");
   f.status.value=v("status", DEFSTAT[v("type","keep")]||"미착수");
   f.next.value=(v("next",[])).join(String.fromCharCode(10));
@@ -4847,7 +5046,7 @@ dlg.addEventListener("close", ()=>{
   if(val==="del"){ if(editing && confirm("삭제?")){ DB.tasks = DB.tasks.filter(t=>t!==editing); save(); } return; }
   if(val!=="ok") return;
   const data = {name:f.name.value.trim(), desc:f.desc.value.trim(), cat:f.cat.value.trim(),
-    sub:f.sub.value, folder:f.folder.value,
+    sub:f.sub.value, folder:f.folder.value, prio:f.prio.value.trim(),
     cycle:f.cycle.value.trim(), type:f.type.value, counterpart:f.counterpart.value.trim(),
     deadline:f.deadline.value.trim(), systems:C(f.systems.value),
     status:f.status.value, next:L(f.next.value),
