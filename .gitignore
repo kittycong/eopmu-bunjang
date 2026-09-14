@@ -1,0 +1,11 @@
+# 실명 원본 · 산출물 — 공개 저장소에 올리지 않음
+tasks.json
+인계자료/
+캡처/
+_check.js
+_patch.py
+__pycache__/
+*.pyc
+/index.html
+names.local.json
+tasks.public.json.bak
