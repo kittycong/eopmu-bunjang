@@ -7,18 +7,19 @@
   --keep:#4b6bdc; --out:#c2410c; --in:#0f766e; --common:#7a7566; --tbd:#9333ea;
   --accent:#1c1b19; --chip:#efece6; --warn:#b91c1c; --zebra:#faf9f6;
   --nav:#26241f; --nav-ink:#e9e5dc; --nav-dim:#9a9488; --nav-line:#3a362f; --nav-hover:#332f28;
+  --amber2:#8a6410;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#161513; --card:#1f1e1b; --ink:#ece9e3; --dim:#9d978c; --line:#33312c;
   --keep:#8ba3f5; --out:#f19a6b; --in:#5cc5b6; --common:#a39c8c; --tbd:#c99af5;
   --accent:#ece9e3; --chip:#2a2825; --warn:#f08a86; --zebra:#232220;
-  --nav:#101214; --nav-ink:#dedbd5; --nav-dim:#8b8e8b; --nav-line:#2a2e32; --nav-hover:#1e2226;
+  --nav:#101214; --nav-ink:#dedbd5; --nav-dim:#8b8e8b; --nav-line:#2a2e32; --nav-hover:#1e2226; --amber2:#d6ad5c;
 }}
 :root[data-theme="dark"]{
   --bg:#161513; --card:#1f1e1b; --ink:#ece9e3; --dim:#9d978c; --line:#33312c;
   --keep:#8ba3f5; --out:#f19a6b; --in:#5cc5b6; --common:#a39c8c; --tbd:#c99af5;
   --accent:#ece9e3; --chip:#2a2825; --warn:#f08a86; --zebra:#232220;
-  --nav:#101214; --nav-ink:#dedbd5; --nav-dim:#8b8e8b; --nav-line:#2a2e32; --nav-hover:#1e2226;
+  --nav:#101214; --nav-ink:#dedbd5; --nav-dim:#8b8e8b; --nav-line:#2a2e32; --nav-hover:#1e2226; --amber2:#d6ad5c;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:15px/1.6 "Pretendard","Malgun Gothic",system-ui,sans-serif;margin:0}
@@ -221,12 +222,36 @@ td.num{text-align:right;color:var(--dim);white-space:nowrap}
 .ev[data-k="회의"],.ev[data-k="내부점검"]{border-left-color:var(--common)}
 .ev[data-k="행사"]{border-left-color:#db2777}
 .ev[data-k="면접"],.ev[data-k="채용"]{border-left-color:#0891b2}
-.ev[data-k="교육"]{border-left-color:#65a30d}
+.ev[data-k="교육"],.ev[data-k="의무교육"]{border-left-color:#65a30d}
+.ev[data-k="임기"]{border-left-color:#9333ea}
 .strip{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:12px}
 .strip b{font-size:11px;color:var(--dim);letter-spacing:.05em;display:block;margin-bottom:6px}
 .strip .ev{display:inline-block;margin-right:5px;white-space:normal;max-width:100%}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin-top:12px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+
+/* ── 위원회 · 교육 ── */
+.cmt{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:13px;overflow:hidden}
+.cmt>h3{margin:0;padding:11px 15px;background:var(--chip);font-size:14.5px;
+        display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
+.cmt>h3 small{font-weight:400;color:var(--dim);font-size:11.5px}
+.cmt .rule{padding:9px 15px 0;font-size:12.5px;color:var(--dim)}
+.cmt .rule b{color:var(--ink);font-weight:600}
+.cmt table{min-width:0}
+.term{font-variant-numeric:tabular-nums;white-space:nowrap}
+.term.over{color:var(--warn);font-weight:700}
+.term.soon{color:var(--amber2);font-weight:600}
+.vacant2{color:var(--dim);font-style:italic}
+.edu{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:11px}
+.edu h4{margin:0 0 4px;font-size:14.5px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.edu h4 .basis{font-size:11px;color:var(--dim);font-weight:400}
+.edu .line{font-size:12.5px;color:var(--dim);margin-bottom:9px}
+.edu .prog{height:7px;border-radius:4px;background:var(--chip);overflow:hidden;margin-bottom:8px}
+.edu .prog i{display:block;height:100%;background:var(--in)}
+.edu .people{display:flex;flex-wrap:wrap;gap:4px}
+.who2b{font-size:12px;padding:3px 9px;border-radius:20px;border:1px solid var(--line);
+       background:var(--bg);color:var(--dim);cursor:pointer;user-select:none}
+.who2b.done{background:var(--in);border-color:var(--in);color:#fff;font-weight:600}
 
 /* ── 담당자별 보기 ── */
 .whobar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--keep);color:#fff;
@@ -486,11 +511,13 @@ textarea{resize:vertical;min-height:64px}
   <div class="navgrp"><b>일정</b>
     <button class="v" data-v="cal">캘린더</button>
     <button class="v" data-v="events">사업·점검 일정</button>
+    <button class="v" data-v="edu">교육 · 수료</button>
   </div>
   <div class="navgrp"><b>조직</b>
     <button class="v" data-v="org">조직도</button>
     <button class="v" data-v="dept">부서별</button>
     <button class="v" data-v="person">사람별</button>
+    <button class="v" data-v="cmt">위원회</button>
   </div>
   <div class="navgrp"><b>자료</b>
     <button class="v" data-v="contacts">연락처</button>
@@ -843,6 +870,8 @@ function render(){
   if(view==="events"){ main.innerHTML = WB + viewEvents(); return; }
   if(view==="docs"){ main.innerHTML = viewDocs(); return; }
   if(view==="contacts"){ main.innerHTML = WB + viewContacts(); return; }
+  if(view==="cmt"){ main.innerHTML = WB + viewCmt(); return; }
+  if(view==="edu"){ main.innerHTML = WB + viewEdu(); return; }
   if(view==="person" || view==="dept" || view==="org"){
     main.innerHTML = WB + (view==="person" ? viewPerson() : view==="dept" ? viewDept() : viewOrg());
     return;
@@ -1012,6 +1041,83 @@ function parseDeadline(s){
   if(!out.length) out.push({kind:"other", text:s});
   return out;
 }
+/* ─────────── 위원회 구성 · 임기 ─────────── */
+const CMTS = () => DB.committees || [];
+const dleft = iso => {
+  const m = parseISO(iso); if(!m) return null;
+  const t = new Date(); t.setHours(0,0,0,0);
+  return Math.round((new Date(m.y, m.m-1, m.d) - t) / 86400000);
+};
+function termCell(mb){
+  if(!mb.end) return '<span class="none">임기 미기재</span>';
+  const d = dleft(mb.end);
+  const cls = d === null ? "" : d < 0 ? " over" : d <= 90 ? " soon" : "";
+  const tag = d === null ? "" : d < 0 ? " · 만료 " + (-d) + "일 경과" : " · D-" + d;
+  return '<span class="term' + cls + '">' + esc(mb.start||"") + " ~ " + esc(mb.end) + tag + '</span>';
+}
+function viewCmt(){
+  let list = CMTS();
+  if(query){ const q=query.toLowerCase(); list = list.filter(c=>JSON.stringify(c).toLowerCase().indexOf(q)>=0); }
+  if(!list.length) return '<div class="empty">위원회 없음</div>';
+  const over = CMTS().reduce((n,c)=>n + c.members.filter(m=>m.end && dleft(m.end) < 0).length, 0);
+  return (over ? '<div class="sos"><b>임기 만료 ' + over + '석 — 재구성·연임 절차 확인</b>'
+          + '<div class="none" style="font-style:normal">만료된 위원으로 의결하면 회의 효력이 문제될 수 있습니다.</div></div>' : '')
+    + list.map(c=>'<div class="cmt"><h3>' + esc(c.name)
+      + '<small>근거 ' + esc(c.doc) + ' · ' + c.members.length + '석</small></h3>'
+      + (c.rule ? '<div class="rule"><b>구성 기준</b> ' + esc(c.rule) + '</div>' : '')
+      + (c.note ? '<div class="rule">' + esc(c.note) + '</div>' : '')
+      + '<div class="tblwrap" style="border:none;margin-top:9px"><table><thead><tr>'
+      + '<th>직위 · 역할</th><th>성명</th><th>구분</th><th>임기</th><th>연임</th>'
+      + '</tr></thead><tbody>'
+      + c.members.map(m=>'<tr>'
+        + '<td>' + esc(m.role) + '</td>'
+        + '<td>' + (m.name ? esc(m.name) : '<span class="vacant2">미기재</span>') + '</td>'
+        + '<td><small>' + esc(m.kind) + '</small></td>'
+        + '<td>' + termCell(m) + '</td>'
+        + '<td><small>' + esc(m.renew||"") + '</small></td></tr>').join('')
+      + '</tbody></table></div></div>').join('');
+}
+
+/* ─────────── 교육 · 수료 ─────────── */
+const EDUS = () => EVENTS().filter(e=>e.cat==="의무교육" || e.cat==="교육");
+function eduTargets(e){
+  const t = e.target || "전 직원";
+  const all = (DB.people||[]).filter(p=>p.name!=="(공석)");
+  if(t.indexOf("사무국") >= 0) return all.filter(p=>p.dept==="사무행정실").map(p=>p.name);
+  if(t.indexOf("PAS") >= 0 || t.indexOf("전담") >= 0)
+    return all.filter(p=>p.team==="PAS팀" || p.dept==="사회서비스실").map(p=>p.name);
+  if(t.indexOf("활동지원사") >= 0) return [];   // 명단이 앱에 없음
+  return all.map(p=>p.name);
+}
+function viewEdu(){
+  let list = EDUS();
+  if(whoFilter) list = list.filter(e=>eduTargets(e).indexOf(whoFilter) >= 0);
+  if(query){ const q=query.toLowerCase(); list = list.filter(e=>JSON.stringify(e).toLowerCase().indexOf(q)>=0); }
+  if(!list.length) return '<div class="empty">해당 교육 없음</div>';
+  const card = e=>{
+    const ppl = eduTargets(e), done = e.completed || [];
+    const pct = ppl.length ? Math.round(done.length / ppl.length * 100) : 0;
+    return '<div class="edu"><h4>' + esc(e.title)
+      + '<span class="chip">' + esc(e.cat) + '</span>'
+      + (e.basis ? '<span class="basis">근거 ' + esc(e.basis) + '</span>' : '') + '</h4>'
+      + '<div class="line">' + esc(e.due||"") + ' · 대상 ' + esc(e.target||"전 직원")
+      + (ppl.length ? ' · 수료 ' + done.length + '/' + ppl.length + ' (' + pct + '%)'
+                    : ' · 명단 미등록')
+      + (e.note ? ' · ' + esc(e.note) : '') + '</div>'
+      + (ppl.length ? '<div class="prog"><i style="width:' + pct + '%"></i></div>'
+        + '<div class="people">' + ppl.map(n=>
+            '<span class="who2b' + (done.indexOf(n)>=0 ? " done" : "") + '" data-cert="' + e.id + '|' + esc(n) + '">'
+            + esc(n) + '</span>').join('') + '</div>' : '')
+      + '<div class="act"><button data-event="' + e.id + '">상세 · 상태</button></div></div>';
+  };
+  const grp = (t, arr) => arr.length ? '<h3 style="margin:16px 0 9px;font-size:14px">' + t
+      + ' <span class="none" style="font-style:normal">' + arr.length + '건</span></h3>'
+      + arr.map(card).join('') : '';
+  return '<div class="calnote">이름을 누르면 수료 처리됩니다. 활동지원사처럼 앱에 명단이 없는 교육은 «상세»에서 메모로 관리하세요.</div>'
+    + grp("법정 의무교육", list.filter(e=>e.cat==="의무교육"))
+    + grp("직무 · 보수교육", list.filter(e=>e.cat==="교육"));
+}
+
 /* ─────────── 연락처 · 비상연락망 ─────────── */
 const CONTACTS = () => DB.contacts || (DB.contacts = []);
 const byCid = id => CONTACTS().filter(c=>c.id===id)[0];
@@ -1104,6 +1210,7 @@ function agenda(){
     const sub2 = e.cat+(e.owner?" · "+e.owner:"")+(e.status&&e.status!=="예정"?" · "+e.status:"");
     const base = {id:e.id, ref:"event", k:e.cat, owner:e.owner, title:e.title, sub:sub2};
     if(R.kind==="weekly") (R.days||[]).forEach(d=>out.push(Object.assign({p:{kind:"weekly", w:d}}, base)));
+    else if(R.kind==="months") (R.months||[]).forEach(m=>out.push(Object.assign({p:{kind:"yearly", m:m, d:R.d||0}}, base)));
     else out.push(Object.assign({p:R}, base));
   });
   EVENTS().forEach(e=>{ if(e.rule) return; const st = parseISO(e.date);
@@ -1540,6 +1647,27 @@ function viewDash(){
       + Object.keys(evCats).sort((a,b)=>evCats[b]-evCats[a])
           .map(c=>bar(c, evCats[c], ev.length)).join('')
       + '</div><div class="act"><button id="goev">일정 보기로</button><button id="goadd">+ 일정 추가</button></div></div>'
+    + (function(){
+        const seats = [];
+        CMTS().forEach(c=>c.members.forEach(m=>{ if(m.end){ const d = dleft(m.end);
+          if(d !== null && d <= 120) seats.push({c:c.name, m:m, d:d}); } }));
+        seats.sort((a,b)=>a.d-b.d);
+        const edus = EDUS().filter(e=>eduTargets(e).length);
+        const low = edus.map(e=>({e:e, p: Math.round((e.completed||[]).length / eduTargets(e).length * 100)}))
+                        .filter(x=>x.p < 100).sort((a,b)=>a.p-b.p);
+        return '<div class="panel"><h3>위원 임기 <small>' + seats.length + '석 · 120일 내</small></h3>'
+          + (seats.length ? seats.map(x=>li('data-v2="cmt"',
+              x.d < 0 ? "만료 " + (-x.d) + "일" : "D-" + x.d,
+              x.c + " · " + x.m.role, (x.m.name || "미기재") + " · ~" + x.m.end)).join('')
+            : '<div class="none">임박한 임기 없음</div>')
+          + '</div>'
+          + '<div class="panel"><h3>교육 수료 현황 <small>미완료 ' + low.length + '건</small></h3>'
+          + (low.length ? low.slice(0,10).map(x=>li('data-v2="edu"', x.p + "%",
+              x.e.title, (x.e.completed||[]).length + "/" + eduTargets(x.e).length
+                + " · " + (x.e.due||""))).join('')
+            : '<div class="none">전원 수료</div>')
+          + '</div>';
+      })()
     + '<div class="panel"><h3>담당자별 업무 <small>클릭하면 그 사람 것만 보기</small></h3>'
       + (function(){
           const m = new Map();
@@ -1990,8 +2118,19 @@ document.addEventListener("click", e=>{
   if(sb){ subFilter = sb.dataset.sub; render(); return; }
   const fp = e.target.closest("[data-folder]");
   if(fp){ copyPath(fp.dataset.folder); return; }
+  const v2 = e.target.closest("[data-v2]");
+  if(v2){ const t2 = v2.dataset.v2;
+    document.querySelectorAll("[data-v]").forEach(b=>b.classList.toggle("on", b.dataset.v===t2));
+    view = t2; window.scrollTo({top:0}); renderFavs(); render(); return; }
   const wq = e.target.closest("[data-who]");
   if(wq){ setWho(wq.dataset.who); return; }
+  const ck = e.target.closest("[data-cert]");
+  if(ck){ const [eid, who] = ck.dataset.cert.split("|"); const ev2 = byEid(eid);
+    if(ev2){ ev2.completed = ev2.completed || [];
+      const i = ev2.completed.indexOf(who);
+      if(i >= 0) ev2.completed.splice(i,1); else ev2.completed.push(who);
+      save(); }
+    return; }
   const cf = e.target.closest("[data-ctfav]");
   if(cf){ const c = byCid(cf.dataset.ctfav); if(c){ c.fav = !c.fav; save(); } return; }
   const ce = e.target.closest("[data-ctedit]");
