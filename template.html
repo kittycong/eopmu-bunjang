@@ -525,6 +525,8 @@ textarea{resize:vertical;min-height:64px}
   <input id="q" type="text" placeholder="검색…">
 </div>
 
+<div class="bar" id="catBar"></div>
+
 <div id="main"></div>
 </div>
 </div>
@@ -672,7 +674,11 @@ textarea{resize:vertical;min-height:64px}
   <label class="f">업무명</label><input type="text" name="name" required>
   <label class="f">업무내용</label><textarea name="desc" placeholder="이 업무가 무엇인지 한두 문장"></textarea>
   <div class="row">
-    <div><label class="f">구분(분야)</label><input type="text" name="cat" placeholder="회계/인사/총무/사업/후원"></div>
+    <div><label class="f">분야</label><select name="cat" id="catSel"></select></div>
+    <div><label class="f">세부분야</label><select name="sub" id="subSel"></select></div>
+  </div>
+  <div class="row">
+    <div><label class="f">서버 폴더</label><select name="folder" id="folderSel"></select></div>
     <div><label class="f">주기</label><input type="text" name="cycle" placeholder="매일/매월/분기/연1회/수시"></div>
   </div>
   <div class="row">
@@ -731,6 +737,36 @@ const L = s => (s||"").split("\n").map(x=>x.trim()).filter(Boolean);
 const C = s => (s||"").split(",").map(x=>x.trim()).filter(Boolean);
 const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const TN = {keep:"유지", out:"인계", in:"인수", common:"공통", tbd:"미정", other:"타 담당"};
+
+// 업무 분류 2단 — 대분류 > 세부 분야
+const CATGROUP = {
+  "사무행정": ["행정", "회계", "총무", "인사", "사업"],
+  "후원":     ["후원금", "후원물품"],
+};
+const catGroupOf = c => {
+  for(const g in CATGROUP) if(CATGROUP[g].indexOf(c) >= 0) return g;
+  return "기타";
+};
+const ALLCATS = () => {
+  const set = new Set();
+  Object.values(CATGROUP).forEach(a=>a.forEach(c=>set.add(c)));
+  DB.tasks.forEach(t=>{ if(t.cat) set.add(t.cat); });
+  return [...set];
+};
+let catFilter = "all", subFilter = "all";
+const SUBCAT = () => DB.subcat || {};
+const FOLDERLIST = () => DB.folders || {};
+const FOLDER_ROOT = () => DB.folderRoot || {};
+const subsOf = c => Object.keys((SUBCAT()[c]) || {});
+// 서버 경로는 브라우저가 바로 열 수 없다 — 복사해 탐색기에 붙이도록 한다
+function copyPath(p){
+  const done = ()=>alert("경로를 복사했습니다. 탐색기 주소창에 붙여넣기 하세요.\n\n" + p);
+  if(navigator.clipboard) navigator.clipboard.writeText(p).then(done, fb); else fb();
+  function fb(){
+    const ta=document.createElement("textarea"); ta.value=p; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy"); ta.remove(); done();
+  }
+}
 const TORDER = {out:0, in:1, tbd:2, keep:3, other:4, common:5};
 const today = () => new Date().toISOString().slice(0,10);
 const byId = id => DB.tasks.filter(t=>t.id===id)[0];
@@ -738,6 +774,12 @@ const byId = id => DB.tasks.filter(t=>t.id===id)[0];
 function visible(){
   let list = filter==="all" ? DB.tasks.slice() : DB.tasks.filter(x=>x.type===filter);
   if(whoFilter) list = list.filter(t=>taskOfWho(t, whoFilter));
+  if(catFilter !== "all"){
+    list = CATGROUP[catFilter]
+      ? list.filter(t=>catGroupOf(t.cat) === catFilter)
+      : list.filter(t=>t.cat === catFilter);
+  }
+  if(subFilter !== "all") list = list.filter(t=>t.sub === subFilter);
   if(query){
     const q = query.toLowerCase();
     list = list.filter(x=>JSON.stringify(x).toLowerCase().indexOf(q)>=0);
@@ -745,7 +787,42 @@ function visible(){
   return list;
 }
 
+function renderCatBar(){
+  // 업무 보기에서만 노출 (일정·조직·연락처에는 분야 개념이 다름)
+  const on = ["card","table","doc","shift"].indexOf(view) >= 0;
+  catBar.hidden = !on;
+  if(!on) return;
+  const cnt = {};
+  DB.tasks.forEach(t=>{ const g = catGroupOf(t.cat); cnt[g] = (cnt[g]||0)+1; cnt["c:"+t.cat] = (cnt["c:"+t.cat]||0)+1; });
+  const btn = (k, label, c) => '<button data-cat="' + esc(k) + '"' + (catFilter===k?' class="on"':'') + '>'
+      + esc(label) + (c ? ' <span class="none" style="font-style:normal">' + c + '</span>' : '') + '</button>';
+  let h = btn("all", "전체 분야", DB.tasks.length);
+  Object.keys(CATGROUP).forEach(g=>{
+    if(!cnt[g]) return;
+    h += btn(g, g, cnt[g]);
+    if(catFilter === g || CATGROUP[g].indexOf(catFilter) >= 0){
+      h += '<span class="none" style="padding:0 2px">›</span>';
+      CATGROUP[g].forEach(c=>{ if(cnt["c:"+c]) h += btn(c, c, cnt["c:"+c]); });
+    }
+  });
+  if(cnt["기타"]) h += btn("기타", "기타", cnt["기타"]);
+
+  const subs = subsOf(catFilter);
+  if(subs.length){
+    const sc = {};
+    DB.tasks.filter(t=>t.cat===catFilter).forEach(t=>{ if(t.sub) sc[t.sub] = (sc[t.sub]||0)+1; });
+    h += '<span style="flex-basis:100%;height:0"></span>'
+       + '<span class="none" style="padding:4px 2px 0">' + esc(catFilter) + ' 세부 ›</span>'
+       + '<button data-sub="all"' + (subFilter==="all"?' class="on"':'') + '>전체</button>'
+       + subs.map(x=>'<button data-sub="' + esc(x) + '"' + (subFilter===x?' class="on"':'') + '>'
+           + esc(x) + (sc[x] ? ' <span class="none" style="font-style:normal">'+sc[x]+'</span>' : '')
+           + '</button>').join('');
+  }
+  catBar.innerHTML = h;
+}
+
 function render(){
+  renderCatBar();
   const t = DB.tasks, n = k => t.filter(x=>x.type===k).length;
   const logged = t.filter(x=>(x.steps||[]).length || (x.log||[]).length).length;
   sub.textContent = DB.meta["소속"] + " · " + DB.meta["작성자"] + " · 기준일 " + DB.meta["기준일"]
@@ -791,7 +868,7 @@ function card(x){
     + '<div class="chips">'
       + '<span class="chip '+x.type+'">'+TN[x.type]+(x.counterpart?' · '+esc(x.counterpart):'')+'</span>'
       + stChip(x)
-      + (x.cat?'<span class="chip">'+esc(x.cat)+'</span>':'')
+      + (x.cat?'<span class="chip">'+esc(catGroupOf(x.cat))+' · '+esc(x.cat)+(x.sub?' · '+esc(x.sub):'')+'</span>':'')
       + (x.cycle?'<span class="chip">'+esc(x.cycle)+'</span>':'')
       + (x.systems||[]).map(s=>'<span class="chip sys">'+esc(s)+'</span>').join('')
     + '</div>'
@@ -815,12 +892,13 @@ function card(x){
 /* ─────────── 보기 2: 표 ─────────── */
 const COLS = [
   ["type","구분"], ["cat","분야"], ["name","업무명"], ["cycle","주기"],
-  ["deadline","기한"], ["counterpart","상대방"], ["systems","시스템"],
+  ["_grp","대분류"], ["sub","세부분야"], ["deadline","기한"], ["counterpart","상대방"], ["systems","시스템"],
   ["_files","관련 문서"], ["_shots","캡처"], ["_steps","절차"], ["_log","기록"]
 ];
 function cellval(x,k){
   if(k==="type") return TORDER[x.type];
   if(k==="systems") return (x.systems||[]).join(", ");
+  if(k==="_grp") return catGroupOf(x.cat);
   if(k==="_files") return (x.files||[]).join(", ");
   if(k==="_shots") return (x.shots||[]).length;
   if(k==="_steps") return (x.steps||[]).length;
@@ -840,6 +918,8 @@ function viewTable(list){
     + rows.map(x=>'<tr>'
       + '<td><span class="chip '+x.type+'">'+TN[x.type]+'</span></td>'
       + '<td>'+esc(x.cat)+'</td>'
+      + '<td><small>'+esc(catGroupOf(x.cat))+'</small></td>'
+      + '<td><small>'+(esc(x.sub||'')||'–')+'</small></td>'
       + '<td class="nm" data-task="'+x.id+'">'+esc(x.name)+'</td>'
       + '<td>'+esc(x.cycle)+'</td>'
       + '<td class="'+(x.deadline?'warn':'')+'">'+esc(x.deadline)+'</td>'
@@ -1707,6 +1787,10 @@ function openTask(id){
         ? '<ul class="trap">'+x.traps.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ul>' : '<div class="none">없음</div>')
     + sec("4. 관련 문서 파일명", (x.files||[]).length
         ? '<ul>'+x.files.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ul>' : '<div class="none">미기재 — [편집]에서 서식·대장 파일명 입력</div>')
+    + (x.folder ? '<section><b>서버 폴더</b>'
+        + '<div style="font-family:monospace;font-size:12.5px;word-break:break-all;color:var(--dim)">'
+        + esc(x.folder) + '</div>'
+        + '<div class="act"><button data-folder="' + esc(x.folder) + '">경로 복사</button></div></section>' : '')
     + sec("5. 접근 권한 · 계정 · 폴더 위치", (x.assets||[]).length
         ? '<ul>'+x.assets.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ul>' : '<div class="none">미기재</div>')
     + sec("6. 업무 캡처 · 화면 사진", shotsHTML(x, true))
@@ -1891,6 +1975,12 @@ document.addEventListener("click", e=>{
       if(!calWho.size || calWho.size === tally.length) calWho = null;
     }
     render(); return; }
+  const cb = e.target.closest("[data-cat]");
+  if(cb){ catFilter = cb.dataset.cat; subFilter = "all"; render(); return; }
+  const sb = e.target.closest("[data-sub]");
+  if(sb){ subFilter = sb.dataset.sub; render(); return; }
+  const fp = e.target.closest("[data-folder]");
+  if(fp){ copyPath(fp.dataset.folder); return; }
   const wq = e.target.closest("[data-who]");
   if(wq){ setWho(wq.dataset.who); return; }
   const cf = e.target.closest("[data-ctfav]");
@@ -2039,7 +2129,34 @@ function open(x){
   editing = x || null;
   del.style.display = x ? "" : "none";
   const f = form, v = (k,d)=> (x&&x[k]!=null) ? x[k] : d;
-  f.name.value=v("name",""); f.desc.value=v("desc",""); f.cat.value=v("cat","");
+  f.name.value=v("name",""); f.desc.value=v("desc","");
+  const cur = v("cat","");
+  catSel.innerHTML = Object.keys(CATGROUP).map(g=>
+      '<optgroup label="'+esc(g)+'">'
+      + CATGROUP[g].map(c=>'<option>'+esc(c)+'</option>').join('')
+      + '</optgroup>').join('')
+    + (ALLCATS().filter(c=>catGroupOf(c)==="기타").length
+        ? '<optgroup label="기타">'
+          + ALLCATS().filter(c=>catGroupOf(c)==="기타").map(c=>'<option>'+esc(c)+'</option>').join('')
+          + '</optgroup>' : '');
+  catSel.value = cur || "행정";
+  const fillSub = ()=>{
+    const list = subsOf(catSel.value);
+    subSel.innerHTML = '<option value="">— 없음 —</option>'
+      + list.map(x=>'<option>'+esc(x)+'</option>').join('');
+    subSel.value = v("sub","");
+    subSel.disabled = !list.length;
+  };
+  const fillFolder = ()=>{
+    const root = FOLDER_ROOT()[catSel.value] || "";
+    const fl = FOLDERLIST()[catSel.value] || [];
+    folderSel.innerHTML = '<option value="">— 없음 —</option>'
+      + fl.map(fn=>'<option value="'+esc(root+"\\"+fn)+'">'+esc(fn)+'</option>').join('');
+    folderSel.value = v("folder","");
+    folderSel.disabled = !fl.length;
+  };
+  fillSub(); fillFolder();
+  catSel.onchange = ()=>{ fillSub(); fillFolder(); };
   f.cycle.value=v("cycle",""); f.type.value=v("type","keep"); f.counterpart.value=v("counterpart","");
   f.deadline.value=v("deadline",""); f.systems.value=(v("systems",[])).join(", ");
   f.status.value=v("status", DEFSTAT[v("type","keep")]||"미착수");
@@ -2056,6 +2173,7 @@ dlg.addEventListener("close", ()=>{
   if(val==="del"){ if(editing && confirm("삭제?")){ DB.tasks = DB.tasks.filter(t=>t!==editing); save(); } return; }
   if(val!=="ok") return;
   const data = {name:f.name.value.trim(), desc:f.desc.value.trim(), cat:f.cat.value.trim(),
+    sub:f.sub.value, folder:f.folder.value,
     cycle:f.cycle.value.trim(), type:f.type.value, counterpart:f.counterpart.value.trim(),
     deadline:f.deadline.value.trim(), systems:C(f.systems.value),
     status:f.status.value, next:L(f.next.value),

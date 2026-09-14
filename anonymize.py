@@ -42,6 +42,15 @@ def main():
     for t in db.get("tasks", []):
         t["shots"] = []
 
+    # 서버 폴더 경로 제거 — 내부 IP·공유 이름·«아이디및비번» 같은 폴더명이 드러난다
+    for t in db.get("tasks", []):
+        t.pop("folder", None)
+    db.pop("folderRoot", None)
+    db.pop("folders", None)
+    # 세부분야는 이름만 남기고 폴더 목록은 버린다
+    for cat, subs in (db.get("subcat") or {}).items():
+        db["subcat"][cat] = {k: [] for k in subs}
+
     blob = json.dumps(db, ensure_ascii=False, indent=2)
 
     # 긴 이름부터 치환 (부분 겹침 방지)
@@ -59,10 +68,11 @@ def main():
 
     # 검증: 원본 이름이 하나라도 남아 있으면 실패
     out = io.open(DST, encoding="utf-8").read()
+    paths = [x for x in ("192.168.", "\\\\\\\\", "아이디및비번") if x in out]
     leaked = sorted(n for n in names if n in out)
     tel = re.findall(r"0\d{1,2}[-. ]?\d{3,4}[-. ]?\d{4}", out)
-    if leaked or tel:
-        sys.exit(f"마스킹 실패 — 남은 실명 {leaked} / 연락처 {tel}")
+    if leaked or tel or paths:
+        sys.exit(f"마스킹 실패 — 실명 {leaked} / 연락처 {tel} / 내부경로 {paths}")
 
     print(f"마스킹 {len(names)}명 → {', '.join(sorted(mask(n) for n in names)[:8])} ...")
     print(f"연락처·사업자번호 제거, 캡처 제거 완료")
