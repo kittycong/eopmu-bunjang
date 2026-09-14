@@ -93,6 +93,9 @@ button.v{font-weight:600}
 .chip.in{background:var(--in);color:#fff;font-weight:600}
 .chip.common{background:var(--common);color:#fff;font-weight:600}
 .chip.tbd{background:var(--tbd);color:#fff;font-weight:600}
+.chip.other{background:var(--dim);color:#fff;font-weight:600}
+.card[data-t="other"]{border-left-color:var(--dim)}
+.grp[data-t="other"]>h3{background:var(--dim)}
 .chip.sys{border:1px solid var(--line);background:transparent}
 
 /* ── 카드 보기 ── */
@@ -224,6 +227,32 @@ td.num{text-align:right;color:var(--dim);white-space:nowrap}
 .strip .ev{display:inline-block;margin-right:5px;white-space:normal;max-width:100%}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin-top:12px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+
+/* ── 담당자별 보기 ── */
+.whobar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--keep);color:#fff;
+        border-radius:10px;padding:9px 14px;margin-bottom:14px;font-size:13.5px}
+.whobar b{font-size:15px}
+.whobar .spacer{flex:1}
+.whobar button{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;
+               font-size:12.5px;padding:4px 11px}
+.whobar button:hover{background:rgba(255,255,255,.28)}
+.wholist{display:flex;flex-direction:column;gap:2px}
+.whoitem{display:flex;gap:8px;align-items:center;font-size:13px;padding:5px 7px;border-radius:7px;cursor:pointer}
+.whoitem:hover{background:var(--chip)}
+.whoitem.me{font-weight:700}
+.whoitem .nm2{flex:1}
+.whoitem .qty{font-variant-numeric:tabular-nums;color:var(--dim);font-size:12px}
+.whoitem .mini2{height:6px;border-radius:3px;background:var(--keep);flex:none}
+
+/* ── 선택 칩 (담당·재원·요일) ── */
+.pickrow{display:flex;flex-wrap:wrap;gap:5px;padding:7px 0 2px}
+.pick{font-size:12.5px;padding:4px 11px;border-radius:20px;border:1px solid var(--line);
+      background:var(--bg);color:var(--dim);cursor:pointer;user-select:none}
+.pick:hover{border-color:var(--dim)}
+.pick.on{background:var(--keep);border-color:var(--keep);color:#fff;font-weight:600}
+.pick.add{border-style:dashed}
+#ruleTabs button{font-size:12.5px;padding:5px 11px}
+.rulebox{padding:2px 0 4px}
 
 /* ── 연락처 ── */
 .sos{border:1px solid var(--warn);border-left-width:4px;border-radius:10px;background:var(--card);
@@ -492,6 +521,7 @@ textarea{resize:vertical;min-height:64px}
   <button data-f="in">인수(받음)</button>
   <button data-f="common">공통</button>
   <button data-f="tbd">미정</button>
+  <button data-f="other">타 담당</button>
   <input id="q" type="text" placeholder="검색…">
 </div>
 
@@ -541,19 +571,58 @@ textarea{resize:vertical;min-height:64px}
       <option>행사</option><option>면접</option><option>채용</option><option>교육</option>
       <option>회의</option><option>신고·보고</option><option>보험·구독 만기</option><option>기타</option>
     </select></div>
-    <div><label class="f">담당</label><input type="text" name="owner" placeholder="이름 (쉼표로 여러 명)"></div>
-  </div>
-  <div class="row">
-    <div><label class="f">날짜 (시작)</label><input type="date" name="date"></div>
-    <div><label class="f">종료일 (기간일 때만)</label><input type="date" name="end"></div>
-  </div>
-  <label class="f">반복·서술 기한 — 날짜 대신 쓸 때 (예: 매월 10일까지 / 3월 31일 / 연 1회)</label>
-  <input type="text" name="due" placeholder="특정 날짜를 넣었으면 비워둬도 됨">
-  <label class="f">세부 내용</label><textarea name="detail" style="min-height:52px"></textarea>
-  <div class="row">
     <div><label class="f">시스템</label><input type="text" name="system" placeholder="홈텍스 / 보탬E"></div>
-    <div><label class="f">재원</label><input type="text" name="fund"></div>
   </div>
+
+  <label class="f">반복 주기</label>
+  <div class="bar" id="ruleTabs" style="margin-bottom:2px">
+    <button type="button" data-rule="date" class="on">특정 날짜</button>
+    <button type="button" data-rule="monthly">매월</button>
+    <button type="button" data-rule="weekly">매주</button>
+    <button type="button" data-rule="yearly">매년</button>
+    <button type="button" data-rule="text">직접 입력</button>
+  </div>
+  <div id="rule-date" class="rulebox">
+    <div class="row">
+      <div><label class="f">날짜</label><input type="date" name="date"></div>
+      <div><label class="f">종료일 (기간일 때만)</label><input type="date" name="end"></div>
+    </div>
+  </div>
+  <div id="rule-monthly" class="rulebox" hidden>
+    <label class="f">매월 며칠</label>
+    <div class="row"><div style="max-width:120px">
+      <input type="number" name="rmDay" min="1" max="31" value="10"></div>
+      <div style="align-self:flex-end;padding-bottom:8px" class="none">일마다 반복</div></div>
+  </div>
+  <div id="rule-weekly" class="rulebox" hidden>
+    <label class="f">요일 (여러 개 선택)</label>
+    <div class="pickrow" id="dowPick"></div>
+  </div>
+  <div id="rule-yearly" class="rulebox" hidden>
+    <label class="f">매년</label>
+    <div class="row">
+      <div style="max-width:110px"><input type="number" name="ryMon" min="1" max="12" value="3" placeholder="월"></div>
+      <div style="max-width:110px"><input type="number" name="ryDay" min="0" max="31" value="31" placeholder="일"></div>
+      <div style="align-self:flex-end;padding-bottom:8px" class="none">월 · 일 (일을 0으로 두면 «그 달 중»)</div>
+    </div>
+  </div>
+  <div id="rule-text" class="rulebox" hidden>
+    <label class="f">서술 기한</label>
+    <input type="text" name="due" placeholder="예) 회기년도 시작 5일 전 / 연 1회">
+  </div>
+
+  <label class="f">담당 <span class="none">클릭해서 선택 · 여러 명 가능</span></label>
+  <div class="pickrow" id="ownerPick"></div>
+  <label class="f">재원 <span class="none">클릭해서 선택 · 여러 개 가능</span></label>
+  <div class="pickrow" id="fundPick"></div>
+
+  <label class="f">세부 내용</label><textarea name="detail" style="min-height:52px"></textarea>
+  <label class="f" style="margin-top:12px">
+    <span style="display:flex;gap:7px;align-items:flex-start;cursor:pointer;color:var(--ink);font-size:13.5px">
+      <input type="checkbox" name="mkTask" style="width:auto;margin-top:3px">
+      <span>담당자 업무분장에도 추가<br>
+        <small class="none">정기 업무를 등록하면 담당자별로 업무 항목이 생기고, 이 일정과 연결됩니다</small></span>
+    </span></label>
   <div class="row">
     <div><label class="f">상태</label><select name="status">
       <option>예정</option><option>준비중</option><option>수검·진행중</option>
@@ -613,6 +682,7 @@ textarea{resize:vertical;min-height:64px}
       <option value="in">인수 — 남에게서 받음</option>
       <option value="common">공통 — 다같이</option>
       <option value="tbd">미정 — 확인 필요</option>
+      <option value="other">타 담당 — 다른 사람 업무</option>
     </select></div>
     <div><label class="f">상대방</label><input type="text" name="counterpart" placeholder="넘겨줄/받아올 사람"></div>
   </div>
@@ -3267,7 +3337,7 @@ const SEED = {
 };
 const KEY = "eopmu_bunjang_pub_v2";
 // 인수인계 진행 상태 기본값 — 구분에서 유도, 이후 사용자가 편집
-const DEFSTAT = {keep:"진행중", out:"인계중", in:"인수중", common:"진행중", tbd:"추가확인"};
+const DEFSTAT = {keep:"진행중", out:"인계중", in:"인수중", common:"진행중", tbd:"추가확인", other:"미착수"};
 let DB = load(), view = "dash", filter = "all", query = "", sortKey = "", sortDir = 1, editing = null;
 
 function normalize(db){
@@ -3288,13 +3358,14 @@ function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
 const L = s => (s||"").split("\n").map(x=>x.trim()).filter(Boolean);
 const C = s => (s||"").split(",").map(x=>x.trim()).filter(Boolean);
 const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const TN = {keep:"유지", out:"인계", in:"인수", common:"공통", tbd:"미정"};
-const TORDER = {out:0, in:1, tbd:2, keep:3, common:4};
+const TN = {keep:"유지", out:"인계", in:"인수", common:"공통", tbd:"미정", other:"타 담당"};
+const TORDER = {out:0, in:1, tbd:2, keep:3, other:4, common:5};
 const today = () => new Date().toISOString().slice(0,10);
 const byId = id => DB.tasks.filter(t=>t.id===id)[0];
 
 function visible(){
   let list = filter==="all" ? DB.tasks.slice() : DB.tasks.filter(x=>x.type===filter);
+  if(whoFilter) list = list.filter(t=>taskOfWho(t, whoFilter));
   if(query){
     const q = query.toLowerCase();
     list = list.filter(x=>JSON.stringify(x).toLowerCase().indexOf(q)>=0);
@@ -3311,23 +3382,24 @@ function render(){
     + "  |  절차·기록 있는 업무 " + logged + "건"
     + "  |  센터 일정 " + EVENTS().length + "건 · 지침·매뉴얼 " + DOCS().length + "건"
     + " · 연락처 " + CONTACTS().length + "건";
-  if(view==="dash"){ main.innerHTML = viewDash(); return; }
+  const WB = whoBar();
+  if(view==="dash"){ main.innerHTML = WB + viewDash(); return; }
   if(view==="all"){ main.innerHTML = viewAll(); return; }
-  if(view==="shift"){ main.innerHTML = viewShift(); return; }
-  if(view==="cal"){ main.innerHTML = viewCalendar(); return; }
-  if(view==="events"){ main.innerHTML = viewEvents(); return; }
+  if(view==="shift"){ main.innerHTML = WB + viewShift(); return; }
+  if(view==="cal"){ main.innerHTML = WB + viewCalendar(); return; }
+  if(view==="events"){ main.innerHTML = WB + viewEvents(); return; }
   if(view==="docs"){ main.innerHTML = viewDocs(); return; }
-  if(view==="contacts"){ main.innerHTML = viewContacts(); return; }
+  if(view==="contacts"){ main.innerHTML = WB + viewContacts(); return; }
   if(view==="person" || view==="dept" || view==="org"){
-    main.innerHTML = view==="person" ? viewPerson() : view==="dept" ? viewDept() : viewOrg();
+    main.innerHTML = WB + (view==="person" ? viewPerson() : view==="dept" ? viewDept() : viewOrg());
     return;
   }
   const list = visible();
-  if(!list.length){ main.innerHTML = '<div class="empty">해당 업무 없음</div>'; return; }
-  main.innerHTML = view==="card" ? viewCard(list)
+  if(!list.length){ main.innerHTML = WB + '<div class="empty">해당 업무 없음</div>'; return; }
+  main.innerHTML = WB + (view==="card" ? viewCard(list)
                  : view==="table" ? viewTable(list)
                  : view==="doc" ? viewDoc(list)
-                 : viewCal(list);
+                 : viewCal(list));
 }
 
 /* ─────────── 보기 1: 카드 ─────────── */
@@ -3568,7 +3640,14 @@ function agenda(){
     out.push({p, id:t.id, ref:"task", k:(t.type==="out"||t.type==="in")?t.type:"task",
               owner:t.counterpart, title:t.name,
               sub:TN[t.type]+(t.counterpart?" · "+t.counterpart:"")})); });
-  EVENTS().forEach(e=>{ const st = parseISO(e.date);
+  // rule 이 있으면 그것을 우선 (매월/매주/매년)
+  EVENTS().forEach(e=>{ const R = e.rule; if(!R) return;
+    const sub2 = e.cat+(e.owner?" · "+e.owner:"")+(e.status&&e.status!=="예정"?" · "+e.status:"");
+    const base = {id:e.id, ref:"event", k:e.cat, owner:e.owner, title:e.title, sub:sub2};
+    if(R.kind==="weekly") (R.days||[]).forEach(d=>out.push(Object.assign({p:{kind:"weekly", w:d}}, base)));
+    else out.push(Object.assign({p:R}, base));
+  });
+  EVENTS().forEach(e=>{ if(e.rule) return; const st = parseISO(e.date);
     if(st){ const en = parseISO(e.end) || st;
       let cur = new Date(st.y, st.m-1, st.d), last = new Date(en.y, en.m-1, en.d), i = 0;
       while(cur <= last && i++ < 60){
@@ -3582,7 +3661,7 @@ function agenda(){
     if(e.due) parseDeadline(e.due).forEach(p=>
     out.push({p, id:e.id, ref:"event", k:e.cat, owner:e.owner, title:e.title,
               sub:e.cat+(e.owner?" · "+e.owner:"")+(e.status&&e.status!=="예정"?" · "+e.status:"")})); });
-  EVENTS().forEach(e=>{ if(!e.due && !e.date)
+  EVENTS().forEach(e=>{ if(!e.due && !e.date && !e.rule)
     out.push({p:{kind:"other",text:e.status||"날짜 미상"}, id:e.id, ref:"event", k:e.cat,
               owner:e.owner, title:e.title, sub:e.cat+(e.status?" · "+e.status:"")}); });
   return out;
@@ -3590,7 +3669,8 @@ function agenda(){
 const evChip = a => '<div class="ev" data-k="'+esc(a.k)+'" data-'+(a.ref==="task"?"task":"event")+'="'+a.id+'" title="'+esc(a.title+' — '+a.sub)+'">'+esc(a.title)+'</div>';
 
 function viewCalendar(){
-  const every = agenda();
+  const every = agenda().filter(a=> !whoFilter ||
+    (a.ref==="task" ? taskOfWho(byId(a.id)||{}, whoFilter) : splitOwner(a.owner).indexOf(whoFilter)>=0));
   const all = every.filter(passWho);
   const first = new Date(calY, calM-1, 1).getDay();
   const days = new Date(calY, calM, 0).getDate();
@@ -3598,6 +3678,7 @@ function viewCalendar(){
   const onDay = d => all.filter(a=>
       (a.p.kind==="date" && a.p.y===calY && a.p.m===calM && a.p.d===d) ||
       (a.p.kind==="monthly" && a.p.d===d) ||
+      (a.p.kind==="weekly" && a.p.w===(first+d-1)%7) ||
       (a.p.kind==="yearly" && a.p.m===calM && (a.p.d===d || (a.p.d===0 && d===1))));
   let cells = "";
   for(let i=0;i<first;i++) cells += '<div class="cell pad"></div>';
@@ -3635,6 +3716,7 @@ function viewCalendar(){
 
 function viewEvents(){
   let list = EVENTS().slice();
+  if(whoFilter) list = list.filter(e=>eventOfWho(e, whoFilter));
   if(evCat!=="all") list = list.filter(e=>e.cat===evCat);
   if(query){ const q=query.toLowerCase(); list = list.filter(e=>JSON.stringify(e).toLowerCase().indexOf(q)>=0); }
   const cats = {}; EVENTS().forEach(e=>cats[e.cat]=(cats[e.cat]||0)+1);
@@ -3742,6 +3824,35 @@ function viewCal(list){
 // 업무는 내 기준 데이터라 담당을 이렇게 본다: 유지·미정=나, 인계=나+인수자, 인수=인계자+나, 공통=공통
 let calWho = null;   // null = 전체 표시. Set 이면 그 담당만.
 
+// ── 담당자별 보기: 앱 전체를 한 사람 기준으로 좁힌다 ──
+const WHOKEY = "eopmu_who_v1";
+let whoFilter = null;
+try{ whoFilter = localStorage.getItem(WHOKEY) || null; }catch(e){}
+
+// 업무의 담당자 — owner 가 있으면 그것, 없으면 내 기준 구분에서 유도
+function taskOwners(t){
+  if(t.owner) return splitOwner(t.owner);
+  if(t.type === "common") return (DB.people||[]).map(p=>p.name).filter(n=>n!=="(공석)");
+  return [ME].concat(splitOwner(t.counterpart));
+}
+const taskOfWho = (t, n) => taskOwners(t).indexOf(n) >= 0;
+const eventOfWho = (e, n) => splitOwner(e.owner).indexOf(n) >= 0;
+
+function setWho(n){
+  whoFilter = n || null;
+  try{ n ? localStorage.setItem(WHOKEY, n) : localStorage.removeItem(WHOKEY); }catch(e){}
+  render();
+}
+function whoBar(){
+  if(!whoFilter) return "";
+  const nt = DB.tasks.filter(t=>taskOfWho(t, whoFilter)).length;
+  const ne = EVENTS().filter(e=>eventOfWho(e, whoFilter)).length;
+  return '<div class="whobar"><b>' + esc(whoFilter) + '</b> 담당만 보는 중'
+    + ' — 업무 ' + nt + '건 · 일정 ' + ne + '건'
+    + '<span class="spacer"></span>'
+    + '<button data-who="">전체 보기로</button></div>';
+}
+
 function itemOwners(a){
   if(a.ref === "event"){
     const o = splitOwner(a.owner);
@@ -3776,29 +3887,111 @@ const iso = d => d.toISOString().slice(0,10);
 const parseISO = v => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v||"");
   return m ? {y:+m[1], m:+m[2], d:+m[3]} : null; };
 let editingEv = null;
+let evRule = "date", evOwners = [], evFunds = [], evDows = [];
+
+const DOW = ["일","월","화","수","목","금","토"];
+// 재원 후보: 지금까지 쓰인 값들을 모아 보여준다
+function fundOptions(){
+  const set = new Set();
+  EVENTS().forEach(e=>(e.fund||"").split(/[,/·]/).forEach(f=>{ f=f.trim(); if(f) set.add(f); }));
+  ["운영","활동지원사업","중증장애인센터지원","민간단체보조금","시설운영","주택사업","후원","복지기금","처우개선비"]
+    .forEach(f=>set.add(f));
+  return [...set].sort();
+}
+function ownerOptions(){
+  const set = new Set((DB.people||[]).map(p=>p.name).filter(n=>n!=="(공석)"));
+  EVENTS().forEach(e=>splitOwner(e.owner).forEach(n=>set.add(n)));
+  return [...set];
+}
+function renderPicks(){
+  const chip = (v, on, kind) =>
+    '<span class="pick'+(on?" on":"")+'" data-pick="'+kind+'" data-v="'+esc(v)+'">'+esc(v)+'</span>';
+  ownerPick.innerHTML = ownerOptions().map(n=>chip(n, evOwners.indexOf(n)>=0, "owner")).join('')
+    + '<span class="pick add" data-pick="owner-add">＋ 직접 입력</span>';
+  fundPick.innerHTML = fundOptions().map(f=>chip(f, evFunds.indexOf(f)>=0, "fund")).join('')
+    + '<span class="pick add" data-pick="fund-add">＋ 직접 입력</span>';
+  dowPick.innerHTML = DOW.map((d,i)=>chip(d, evDows.indexOf(i)>=0, "dow")
+      .replace('data-v="'+d+'"', 'data-v="'+i+'"')).join('');
+}
+function setRule(r){
+  evRule = r;
+  ruleTabs.querySelectorAll("[data-rule]").forEach(b=>b.classList.toggle("on", b.dataset.rule===r));
+  ["date","monthly","weekly","yearly","text"].forEach(k=>{
+    document.getElementById("rule-"+k).hidden = (k !== r);
+  });
+}
+ruleTabs.addEventListener("click", e=>{
+  const b = e.target.closest("[data-rule]"); if(b) setRule(b.dataset.rule);
+});
+ndlg.addEventListener("click", e=>{
+  const p = e.target.closest("[data-pick]"); if(!p) return;
+  const kind = p.dataset.pick;
+  if(kind === "owner-add" || kind === "fund-add"){
+    const v = prompt(kind === "owner-add" ? "담당자 이름" : "재원 이름");
+    if(v && v.trim()){ (kind === "owner-add" ? evOwners : evFunds).push(v.trim()); renderPicks(); }
+    return;
+  }
+  const v = p.dataset.v;
+  const arr = kind === "owner" ? evOwners : kind === "fund" ? evFunds : evDows;
+  const val = kind === "dow" ? +v : v;
+  const i = arr.indexOf(val);
+  if(i >= 0) arr.splice(i,1); else arr.push(val);
+  renderPicks();
+});
+
+// 반복 규칙 -> 사람이 읽는 기한 문자열 (기존 데이터와 같은 표기)
+function ruleToDue(f){
+  if(evRule === "date") return f.date.value || "";
+  if(evRule === "monthly") return "매월 " + (f.rmDay.value||1) + "일";
+  if(evRule === "weekly") return evDows.length ? "매주 " + evDows.slice().sort().map(d=>DOW[d]).join("·") + "요일" : "";
+  if(evRule === "yearly") return (f.ryMon.value||1) + "월" + (+f.ryDay.value ? " " + f.ryDay.value + "일" : " 중");
+  return f.due.value.trim();
+}
+function ruleObj(f){
+  if(evRule === "monthly") return {kind:"monthly", d:+f.rmDay.value || 1};
+  if(evRule === "weekly") return {kind:"weekly", days:evDows.slice().sort()};
+  if(evRule === "yearly") return {kind:"yearly", m:+f.ryMon.value || 1, d:+f.ryDay.value || 0};
+  return null;   // date / text 는 기존 date·due 필드로 처리
+}
 
 function openEventForm(ev, presetDate){
   editingEv = ev || null;
   ntitle.textContent = ev ? "일정 편집" : "일정 추가";
   ndel.style.display = ev ? "" : "none";
   const f = nform, g = (k,d)=> (ev && ev[k]!=null) ? ev[k] : d;
-  f.title.value=g("title",""); f.cat.value=g("cat","행사"); f.owner.value=g("owner","");
+  f.title.value=g("title",""); f.cat.value=g("cat","행사");
   f.date.value=g("date", presetDate||""); f.end.value=g("end",""); f.due.value=g("due","");
-  f.detail.value=g("detail",""); f.system.value=g("system",""); f.fund.value=g("fund","");
+  f.detail.value=g("detail",""); f.system.value=g("system","");
   f.status.value=g("status","예정"); f.note.value=g("note","");
+  f.mkTask.checked = false;
+
+  evOwners = splitOwner(g("owner",""));
+  evFunds = (g("fund","")||"").split(/[,/·]/).map(x=>x.trim()).filter(Boolean);
+  const r = g("rule", null);
+  evDows = (r && r.kind==="weekly") ? r.days.slice() : [];
+  f.rmDay.value = (r && r.kind==="monthly") ? r.d : 10;
+  f.ryMon.value = (r && r.kind==="yearly") ? r.m : 3;
+  f.ryDay.value = (r && r.kind==="yearly") ? r.d : 31;
+  setRule(r ? r.kind : (g("date","") ? "date" : (g("due","") ? "text" : (presetDate ? "date" : "date"))));
+  renderPicks();
   ndlg.showModal();
 }
 ndlg.addEventListener("close", ()=>{
   const v = ndlg.returnValue, f = nform;
   if(v==="del"){ if(editingEv && confirm("이 일정 삭제?")){ DB.events = DB.events.filter(e=>e!==editingEv); save(); } return; }
   if(v!=="ok") return;
-  const data = {title:f.title.value.trim(), cat:f.cat.value, owner:f.owner.value.trim(),
-    date:f.date.value, end:f.end.value, due:f.due.value.trim() || f.date.value,
-    detail:f.detail.value.trim(), system:f.system.value.trim(), fund:f.fund.value.trim(),
+  const rule = ruleObj(f);
+  const data = {title:f.title.value.trim(), cat:f.cat.value, owner:evOwners.join(", "),
+    date: evRule==="date" ? f.date.value : "", end: evRule==="date" ? f.end.value : "",
+    due: ruleToDue(f), rule: rule,
+    detail:f.detail.value.trim(), system:f.system.value.trim(), fund:evFunds.join(", "),
     status:f.status.value, note:f.note.value.trim()};
-  if(editingEv) Object.assign(editingEv, data);
+  let ev;
+  if(editingEv){ ev = editingEv; Object.assign(ev, data); }
   else { DB.events = DB.events || [];
-    DB.events.push(Object.assign({id:"e-new-"+Date.now(), prev:"", source:"직접 추가"}, data)); }
+    ev = Object.assign({id:"e-new-"+Date.now(), prev:"", source:"직접 추가"}, data);
+    DB.events.push(ev); }
+  if(f.mkTask.checked) makeTasksFromEvent(ev);
   save();
 });
 addev.onclick = ()=>openEventForm(null, view==="cal" ? null : iso(new Date()));
@@ -3808,6 +4001,10 @@ addev.onclick = ()=>openEventForm(null, view==="cal" ? null : iso(new Date()));
 function nextDue(pp, from){
   const t = from || new Date(); t.setHours(0,0,0,0);
   if(pp.kind==="date") return new Date(pp.y, pp.m-1, pp.d);
+  if(pp.kind==="weekly"){
+    const c = new Date(t); c.setDate(t.getDate() + ((pp.w - t.getDay() + 7) % 7));
+    return c;
+  }
   if(pp.kind==="monthly"){
     let c = new Date(t.getFullYear(), t.getMonth(), pp.d);
     if(c < t) c = new Date(t.getFullYear(), t.getMonth()+1, pp.d);
@@ -3884,6 +4081,20 @@ function viewDash(){
       + Object.keys(evCats).sort((a,b)=>evCats[b]-evCats[a])
           .map(c=>bar(c, evCats[c], ev.length)).join('')
       + '</div><div class="act"><button id="goev">일정 보기로</button><button id="goadd">+ 일정 추가</button></div></div>'
+    + '<div class="panel"><h3>담당자별 업무 <small>클릭하면 그 사람 것만 보기</small></h3>'
+      + (function(){
+          const m = new Map();
+          t.forEach(x=>taskOwners(x).forEach(o=>m.set(o, (m.get(o)||0)+1)));
+          EVENTS().forEach(e=>splitOwner(e.owner).forEach(o=>m.set(o, (m.get(o)||0)+1)));
+          const rows = [...m.entries()].sort((a,b)=>(a[0]===ME?-1:b[0]===ME?1:0) || b[1]-a[1]);
+          const max = rows.length ? rows[0][1] : 1;
+          return '<div class="wholist">' + rows.map(([n,c])=>
+            '<div class="whoitem' + (n===ME?' me':'') + '" data-who="' + esc(n) + '">'
+            + '<span class="nm2">' + esc(n) + (n===ME?' (나)':'') + '</span>'
+            + '<span class="mini2" style="width:' + Math.max(6, Math.round(c/max*84)) + 'px"></span>'
+            + '<span class="qty">' + c + '</span></div>').join('') + '</div>';
+        })()
+      + '</div>'
     + '<div class="panel"><h3>관련 문서 미기재 <small>'+noFile.length+'건</small></h3>'
       + listOf(noFile.slice(0,12).map(x=>li('data-task="'+x.id+'"', TN[x.type], x.name,
           (x.cat||"")+(x.counterpart?" · "+x.counterpart:""))), "모두 기재됨")
@@ -4000,6 +4211,28 @@ odlg.addEventListener("close", ()=>{
   save();
   alert(from + " → " + to + " 인계 처리\n일정 " + evIds.length + "건 / 업무 " + tkIds.length + "건");
 });
+
+// 정기 일정을 담당자별 업무로 등록. 내가 담당이면 «유지», 남이면 «타 담당»으로 들어간다.
+function makeTasksFromEvent(ev){
+  const owners = splitOwner(ev.owner);
+  const targets = owners.length ? owners : [ME];
+  let made = 0;
+  targets.forEach(who=>{
+    if(DB.tasks.some(t=>t.srcEvent===ev.id && (t.owner||ME)===who)) return;
+    const mine = who === ME;
+    DB.tasks.push({
+      id:"t"+Date.now()+"-"+made, srcEvent:ev.id, owner:who,
+      name:ev.title, cat:ev.cat, cycle:ev.due || "", type: mine ? "keep" : "other",
+      counterpart: mine ? "" : who, deadline:ev.due || "", desc:ev.detail || "",
+      status: mine ? "진행중" : "미착수",
+      systems:[ev.system].filter(Boolean), steps:[], files:[], shots:[],
+      assets:(ev.fund ? ["재원: "+ev.fund] : []), traps:[], next:[],
+      log:[{d:today(), t:"일정에서 업무 등록 · 담당 "+who}], done:[]
+    });
+    made++;
+  });
+  if(made) alert("업무분장에 " + made + "건 추가 (담당: " + targets.join(", ") + ")");
+}
 
 // 일정 -> 업무로 등록 (일정과 업무를 한 흐름으로 묶기)
 function eventToTask(id){
@@ -4176,7 +4409,8 @@ function pcard(p){
         ? '<ol>'+p.duties.map(d=>'<li>'+esc(d)+'</li>').join('')+'</ol>'
         : '<div class="none">담당업무 미기재</div>')
     + (p.name!=="(공석)"
-        ? '<div class="act"><button data-owner="'+esc(p.name)+'">이 사람 업무·일정 인계</button></div>' : '')
+        ? '<div class="act"><button data-who="'+esc(p.name)+'">이 사람만 보기</button>'
+          + '<button data-owner="'+esc(p.name)+'">인계</button></div>' : '')
     + (mine.length
         ? '<div class="sec"><b>나와의 인수인계 '+mine.length+'건</b>'
           + mine.map(t=>'<span class="link" data-task="'+t.id+'"><span class="chip '+t.type+'">'+TN[t.type]+'</span> '+esc(t.name)+'</span>').join('')
@@ -4285,6 +4519,8 @@ document.addEventListener("click", e=>{
       if(!calWho.size || calWho.size === tally.length) calWho = null;
     }
     render(); return; }
+  const wq = e.target.closest("[data-who]");
+  if(wq){ setWho(wq.dataset.who); return; }
   const cf = e.target.closest("[data-ctfav]");
   if(cf){ const c = byCid(cf.dataset.ctfav); if(c){ c.fav = !c.fav; save(); } return; }
   const ce = e.target.closest("[data-ctedit]");
