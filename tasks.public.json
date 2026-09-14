@@ -160,9 +160,13 @@
       "cycle": "수시",
       "deadline": "",
       "desc": "센터 물품 관리 담당. ('2026.09.01.' 업무분장표 기재)",
-      "systems": [],
+      "systems": [
+        "문서생성 시스템"
+      ],
       "steps": [],
-      "assets": [],
+      "assets": [
+        "문서생성 시스템 [물품구매(내부기안)] — 내부기안 + 산출기초조사서 + 비교견적 3곳 · https://chulchang-munseo.vercel.app/"
+      ],
       "traps": [
         "인수 예정인 '비품관리'와 범위 중복 여부 확인 — 하나로 합칠지 결정"
       ],
@@ -180,9 +184,13 @@
       "cycle": "분기별 1회",
       "deadline": "",
       "desc": "운영위원회 자료집 제작, 회의 준비, 안건정리, 회의록 작성.",
-      "systems": [],
+      "systems": [
+        "문서생성 시스템"
+      ],
       "steps": [],
-      "assets": [],
+      "assets": [
+        "문서생성 시스템 [운영위원회] — 운영위원회 안건·자료 생성 · https://chulchang-munseo.vercel.app/"
+      ],
       "traps": [
         "'업무분담' 시트는 '다같이', '2026.09.01.' 시트는 김O원 담당 — 확정 필요",
         "운영위원 임기 2023.02.28~2026.02.28 이미 종료 — 재구성 여부 확인",
@@ -237,7 +245,8 @@
       "desc": "장블랑제리(해피피플) 빵 후원품 거래명세 검증 후 물품수령증 작성·날인·보관. 후원물품 중 빵만 김O원 유지, 그 외 물품은 김O리 담당.",
       "systems": [
         "한글(hwpx)",
-        "엑셀"
+        "엑셀",
+        "문서생성 시스템"
       ],
       "steps": [
         "날짜별 거래명세 엑셀 합산 검증 (총수량 SUM 범위 잘림 상습)",
@@ -248,7 +257,8 @@
         "스캔본 '..._합본_스캔.pdf' 로 수령증 폴더 보관"
       ],
       "assets": [
-        "클로드 스킬: jangblanc-donation-workflow"
+        "클로드 스킬: jangblanc-donation-workflow",
+        "문서생성 시스템 [장블랑제리 합본] — 출장신청서+복명서 합본 1파일 생성 · https://chulchang-munseo.vercel.app/"
       ],
       "traps": [
         "한컴 COM 은 Visible=true 필수, InsertFile 은 CreateAction 으로만 호출",
@@ -352,9 +362,13 @@
       "cycle": "발생시",
       "deadline": "",
       "desc": "빵 이외 후원물품 접수, 물품수령증 발급, 대상자 배분 및 배분대장 관리.",
-      "systems": [],
+      "systems": [
+        "문서생성 시스템"
+      ],
       "steps": [],
-      "assets": [],
+      "assets": [
+        "문서생성 시스템 [물품수령증] — 후원물품 수령증 · 품목표 + 사진 첨부 · https://chulchang-munseo.vercel.app/"
+      ],
       "traps": [
         "빵 / 빵 외 경계로 담당이 갈림 — 수령증 발급 주체 혼동 주의",
         "물품 후원은 후원금과 별개 장부·별개 보고 — 후원금 결과보고에 섞지 말 것"
@@ -373,9 +387,13 @@
       "cycle": "발생시",
       "deadline": "",
       "desc": "인사회의 안건 정리 및 회의록 작성.",
-      "systems": [],
+      "systems": [
+        "문서생성 시스템"
+      ],
       "steps": [],
-      "assets": [],
+      "assets": [
+        "문서생성 시스템 [인사회의록] — 인사회의록 생성 · https://chulchang-munseo.vercel.app/"
+      ],
       "traps": [],
       "log": [],
       "done": [],
@@ -613,9 +631,13 @@
       "cycle": "분기별 1회 / 재물조사 연 1회",
       "deadline": "재물조사 연 1회",
       "desc": "센터 비품 현황 관리. 전담업무. 재물조사 연 1회 실시.",
-      "systems": [],
+      "systems": [
+        "문서생성 시스템"
+      ],
       "steps": [],
-      "assets": [],
+      "assets": [
+        "문서생성 시스템 [물품구매(내부기안)] — 내부기안 + 산출기초조사서 + 비교견적 3곳 · https://chulchang-munseo.vercel.app/"
+      ],
       "traps": [
         "기존 '물품관리담당'과 범위 중복 확인",
         "재물조사 대장 인수받을 것"
@@ -731,9 +753,13 @@
       "cycle": "발생시",
       "deadline": "",
       "desc": "소모품 계약 및 각종 계약 관리 총괄.",
-      "systems": [],
+      "systems": [
+        "문서생성 시스템"
+      ],
       "steps": [],
-      "assets": [],
+      "assets": [
+        "문서생성 시스템 [고정거래(내부기안)] — 고정거래 기안 · 과거 기안에서 찾아 채우기 · https://chulchang-munseo.vercel.app/"
+      ],
       "traps": [],
       "log": [],
       "done": [],
@@ -895,9 +921,13 @@
       "cycle": "수시",
       "deadline": "",
       "desc": "소모품 현황 파악 및 구매.",
-      "systems": [],
+      "systems": [
+        "문서생성 시스템"
+      ],
       "steps": [],
-      "assets": [],
+      "assets": [
+        "문서생성 시스템 [물품구매(내부기안)] — 소모품 구매 기안 · https://chulchang-munseo.vercel.app/"
+      ],
       "traps": [],
       "log": [],
       "done": [],
@@ -2330,6 +2360,15 @@
       "scope": "총무",
       "note": "배포 브랜치 main2 / localStorage 병합 주의",
       "path": "https://kittycong.github.io/guro_dangbun/",
+      "checked": false
+    },
+    {
+      "id": "d-docsys",
+      "title": "문서생성 시스템 (출장·기안·수령증·회의록·휴가·운영위)",
+      "kind": "매뉴얼",
+      "scope": "사무국 공통",
+      "note": "출장신청서·복명서, 물품구매/고정거래 내부기안, 산출기초조사서, 후원물품 수령증, 인사회의록, 휴가신청, 운영위원회 안건, 장블랑제리 합본 생성. 작성 → 결재중 → 결재완료 상태 관리와 엑셀 다운로드·구글시트 전송 지원.",
+      "path": "https://chulchang-munseo.vercel.app/",
       "checked": false
     }
   ]
