@@ -28,10 +28,18 @@ def build(kind):
     assert PLACEHOLDER in tpl, f"template.html 에 {PLACEHOLDER} 자리표시자 없음"
     out = tpl.replace(PLACEHOLDER, seed)
 
+    # Supabase 접속 정보는 내부용에만 주입한다. 공개본은 연결하지 않는다.
+    sb_path = os.path.join(BASE, "supabase.local.json")
+    if kind == "internal" and os.path.exists(sb_path):
+        cfg = json.load(io.open(sb_path, encoding="utf-8"))
+        cfg.pop("_설명", None)
+        out = out.replace("/*__SUPABASE__*/null", json.dumps(cfg, ensure_ascii=False))
+
     if kind == "public":
         # 공개본은 브라우저 저장소 키를 분리해 내부용 데이터와 섞이지 않게 한다
         out = out.replace('const KEY = "eopmu_bunjang_v2";',
                           'const KEY = "eopmu_bunjang_pub_v2";')
+        assert "supabase.co" not in out, "공개본에 Supabase 접속 정보가 들어갔다"
 
     dst = os.path.join(BASE, out_name)
     os.makedirs(os.path.dirname(dst), exist_ok=True)

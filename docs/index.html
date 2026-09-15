@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>업무분장 인수인계</title>
 <style>
@@ -229,6 +230,16 @@ td.num{text-align:right;color:var(--dim);white-space:nowrap}
 .strip .ev{display:inline-block;margin-right:5px;white-space:normal;max-width:100%}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin-top:12px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+
+/* ── 공유 동기화 ── */
+.syncstate{font-size:11.5px;color:var(--nav-dim);padding:2px 12px 6px;line-height:1.45}
+.syncstate b{display:block;color:var(--nav-ink);font-size:12.5px;font-weight:600}
+.syncstate.on b{color:#7fd3c4}
+.syncstate.err b{color:#f0a08a}
+#logdlg .row>div{min-width:150px}
+.conflict{border:1px solid var(--warn);border-left-width:4px;border-radius:9px;
+          background:var(--card);padding:13px 15px;margin-bottom:12px}
+.conflict b{display:block;color:var(--warn);margin-bottom:4px}
 
 /* ── 백업 ── */
 .bkrow{display:flex;gap:10px;align-items:center;font-size:13px;padding:8px 0;border-top:1px solid var(--line)}
@@ -535,6 +546,13 @@ textarea{resize:vertical;min-height:64px}
     <button class="v" data-v="all">전체 출력</button>
     <button id="prt">인쇄</button>
   </div>
+  <div class="navgrp" id="syncGrp"><b>공유</b>
+    <div id="syncState" class="syncstate">연결 안 됨</div>
+    <button id="syncBtn">로그인</button>
+    <button id="pullBtn" hidden>지금 불러오기</button>
+    <button id="pushBtn" hidden>지금 올리기</button>
+  </div>
+
   <div class="navgrp"><b>작업</b>
     <button id="add">+ 업무</button>
     <button id="addev">+ 일정</button>
@@ -572,6 +590,20 @@ textarea{resize:vertical;min-height:64px}
   <div id="pbody"></div>
   <div class="act" style="margin-top:14px"><button onclick="pdlg.close()">닫기</button></div>
 </dialog>
+
+<dialog id="logdlg"><form method="dialog" id="logform">
+  <h3 style="margin:0 0 4px;font-size:16px">공유 저장소 로그인</h3>
+  <div class="none" style="margin-bottom:12px">센터 계정으로 로그인하면 업무·일정·수료 기록이 모두에게 공유됩니다.</div>
+  <div class="row">
+    <div><label class="f">이메일</label><input type="email" name="email" autocomplete="username" required></div>
+    <div><label class="f">비밀번호</label><input type="password" name="pw" autocomplete="current-password" required></div>
+  </div>
+  <div id="logmsg" class="none" style="margin-top:9px"></div>
+  <div class="act" style="margin-top:14px">
+    <button value="in">로그인</button>
+    <button value="cancel" formnovalidate>취소</button>
+  </div>
+</form></dialog>
 
 <dialog id="bdlg">
   <h3 style="margin:0 0 4px;font-size:16px">백업 · 복원</h3>
@@ -4400,7 +4432,7 @@ let lastSaved = JSON.stringify(DB);
 function save(){
   bkPush(lastSaved);                 // 바꾸기 직전 상태를 남긴다
   lastSaved = JSON.stringify(DB);
-  try{ localStorage.setItem(KEY, lastSaved); }catch(e){} render();
+  try{ localStorage.setItem(KEY, lastSaved); }catch(e){} syncQueue(); render();
   if(tdlg.open && curTask) openTask(curTask.id); }
 const L = s => (s||"").split("\n").map(x=>x.trim()).filter(Boolean);
 const C = s => (s||"").split(",").map(x=>x.trim()).filter(Boolean);
@@ -4681,6 +4713,116 @@ function parseDeadline(s){
   if(!out.length) out.push({kind:"other", text:s});
   return out;
 }
+/* ─────────── Supabase 공유 저장소 ─────────── */
+// 앱 전체 상태를 단일 문서로 주고받는다. rev 로 동시 편집 충돌을 막고,
+// 충돌이 나면 덮어쓰지 않고 최신본을 받아 사용자가 선택하게 한다.
+const SB_CFG = /*__SUPABASE__*/null;
+let sb = null, sbUser = null, sbRev = 0, sbBusy = false, sbDirty = false;
+
+function syncShow(text, cls, sub2){
+  if(typeof syncState === "undefined" || !syncState) return;
+  syncState.className = "syncstate" + (cls ? " " + cls : "");
+  syncState.innerHTML = "<b>" + esc(text) + "</b>" + (sub2 ? esc(sub2) : "");
+}
+function syncInit(){
+  if(!SB_CFG || !window.supabase){
+    if(typeof syncGrp !== "undefined" && syncGrp) syncGrp.hidden = true;
+    return;
+  }
+  sb = window.supabase.createClient(SB_CFG.url, SB_CFG.anonKey);
+  sb.auth.getSession().then(({data})=>{
+    if(data && data.session){ sbUser = data.session.user; afterLogin(); }
+    else syncShow("로그인 필요", "", "이 기기에만 저장 중");
+  });
+}
+async function afterLogin(){
+  syncShow("연결됨", "on", sbUser.email);
+  syncBtn.textContent = "로그아웃";
+  pullBtn.hidden = pushBtn.hidden = false;
+  await pullState(true);
+  // 다른 사람이 저장하면 알려준다
+  sb.channel("app_state")
+    .on("postgres_changes", {event:"UPDATE", schema:"public", table:"app_state"}, p=>{
+      if(p.new && p.new.rev !== sbRev) syncShow("새 버전 있음", "err",
+        (p.new.updated_by || "누군가") + " 가 저장함 · 불러오기 누르기");
+    }).subscribe();
+}
+async function pullState(silent){
+  if(!sb) return;
+  const {data, error} = await sb.from("app_state").select("data,rev,updated_at,updated_by")
+    .eq("id", SB_CFG.stateId).maybeSingle();
+  if(error){ syncShow("불러오기 실패", "err", error.message); return; }
+  if(!data){
+    if(!silent && confirm("공유 저장소가 비어 있습니다.\n지금 내 데이터를 올려서 시작할까요?")) await pushState("최초 등록");
+    else syncShow("저장소 비어 있음", "", "«지금 올리기» 로 시작");
+    return;
+  }
+  sbRev = data.rev;
+  DB = normalize(data.data);
+  lastSaved = JSON.stringify(DB);
+  try{ localStorage.setItem(KEY, lastSaved); }catch(e){}
+  sbDirty = false;
+  syncShow("연결됨", "on", "rev " + sbRev + " · " + (data.updated_by || "") );
+  render();
+  if(!silent) alert("공유 저장소에서 불러왔습니다. (rev " + sbRev + ")");
+}
+async function pushState(note){
+  if(!sb || sbBusy) return;
+  sbBusy = true;
+  const {data, error} = await sb.rpc("save_state", {
+    p_id: SB_CFG.stateId, p_data: JSON.parse(JSON.stringify(DB)),
+    p_rev: sbRev, p_by: (sbUser && sbUser.email) || null, p_note: note || null
+  });
+  sbBusy = false;
+  if(error){ syncShow("저장 실패", "err", error.message); return; }
+  const row = Array.isArray(data) ? data[0] : data;
+  if(row && row.ok){
+    sbRev = row.rev; sbDirty = false;
+    syncShow("연결됨", "on", "rev " + sbRev + " · 방금 저장");
+  }else{
+    sbDirty = true;
+    syncShow("충돌", "err", "다른 사람이 먼저 저장함 (rev " + (row && row.rev) + ")");
+    if(confirm("다른 사람이 먼저 저장했습니다.\n\n확인 = 그쪽 최신본을 불러옵니다 (내 변경은 백업에 남습니다)\n취소 = 아무것도 하지 않습니다"))
+      await pullState(true);
+  }
+}
+// 저장할 때마다 자동으로 올린다 (잠깐 모았다가)
+let pushTimer = null;
+function syncQueue(){
+  if(!sb || !sbUser) return;
+  sbDirty = true;
+  syncShow("저장 중…", "", "");
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(()=>pushState(), 900);
+}
+
+syncBtn.onclick = async ()=>{
+  if(sbUser){
+    if(!confirm("로그아웃하면 이 기기에만 저장됩니다. 계속할까요?")) return;
+    await sb.auth.signOut(); sbUser = null; sbRev = 0;
+    syncBtn.textContent = "로그인"; pullBtn.hidden = pushBtn.hidden = true;
+    syncShow("로그인 필요", "", "이 기기에만 저장 중");
+    return;
+  }
+  logmsg.textContent = ""; logform.reset(); logdlg.showModal();
+};
+pullBtn.onclick = ()=>pullState(false);
+pushBtn.onclick = ()=>pushState("수동 올리기");
+
+logdlg.addEventListener("close", async ()=>{
+  if(logdlg.returnValue !== "in") return;
+  const email = logform.email.value.trim(), pw = logform.pw.value;
+  syncShow("로그인 중…", "", "");
+  const {data, error} = await sb.auth.signInWithPassword({email, password: pw});
+  if(error){
+    syncShow("로그인 실패", "err", error.message);
+    alert("로그인 실패: " + error.message);
+    return;
+  }
+  sbUser = data.user;
+  afterLogin();
+});
+
 /* ─────────── 위원회 구성 · 임기 ─────────── */
 const CMTS = () => DB.committees || [];
 const dleft = iso => {
@@ -5995,5 +6137,6 @@ imp.onclick = ()=>{
   i.click();
 };
 
+syncInit();
 render();
 </script>
