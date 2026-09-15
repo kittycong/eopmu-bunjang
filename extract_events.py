@@ -1,6 +1,6 @@
 """'신고 및 보고' + '보험 및 이용권' 시트 -> tasks.json 의 events 배열 (센터 전체 일정)
    지도점검·평가 등 시트에 없는 일정은 SEED_EXTRA 로 직접 추가."""
-import io, json, os, re, openpyxl
+import io, json, os, re, sys, openpyxl
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 
@@ -96,12 +96,46 @@ DOCS = [
 docs = [{"id": f"d-{i}", "title": t, "kind": k, "scope": s, "note": n, "path": p, "checked": False}
         for i, (t, k, s, n, p) in enumerate(DOCS)]
 
+
+# ── 병합 ────────────────────────────────────────────────
+# 앱에서 추가·편집한 일정(위원회·교육·수료기록·인계이력)을 지우지 않는다.
+# 기본은 «새 항목만 추가». 시트 값을 다시 가져오려면  python extract_events.py --refresh
+REFRESH = "--refresh" in sys.argv
+SHEET_FIELDS = ("title", "detail", "due", "system", "fund", "prev", "source")
+
+def merge(dst, src, key="id"):
+    idx = {x[key]: x for x in dst}
+    added = updated = 0
+    for it in src:
+        cur = idx.get(it[key])
+        if cur is None:
+            dst.append(it); added += 1
+        elif REFRESH:
+            before = {k: cur.get(k) for k in SHEET_FIELDS}
+            for k in SHEET_FIELDS:
+                if k in it:
+                    cur[k] = it[k]
+            if {k: cur.get(k) for k in SHEET_FIELDS} != before:
+                updated += 1
+    return added, updated
+
 path = os.path.join(BASE, "tasks.json")
 db = json.load(io.open(path, encoding="utf-8"))
-db["events"] = events
-db["docs"] = docs
+db.setdefault("events", [])
+db.setdefault("docs", [])
+ea, eu = merge(db["events"], events)
+# 문서함은 제목이 키. 읽음 표시·파일 경로는 사용자 입력이라 보존한다.
+dmap = {d["title"]: d for d in db["docs"]}
+da = 0
+for d in docs:
+    if d["title"] not in dmap:
+        db["docs"].append(d); da += 1
 io.open(path, "w", encoding="utf-8").write(json.dumps(db, ensure_ascii=False, indent=2))
 
 from collections import Counter
-print(f"events {len(events)}건", dict(Counter(e['cat'] for e in events)))
-print(f"docs   {len(docs)}건", dict(Counter(d['kind'] for d in docs)))
+print(f"시트에서 읽음 — events {len(events)}건 / docs {len(docs)}건")
+print(f"병합 결과 — events 추가 {ea} · 갱신 {eu} · 보존 {len(db['events']) - ea}")
+print(f"           docs   추가 {da} · 보존 {len(db['docs']) - da}")
+print(dict(Counter(e['cat'] for e in db['events'])))
+if not REFRESH:
+    print("· 기존 항목은 건드리지 않음. 시트 값으로 되돌리려면 --refresh")

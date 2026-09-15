@@ -49,6 +49,14 @@ for r in range(5, ws.max_row + 1):
 
 path = os.path.join(BASE, "tasks.json")
 db = json.load(io.open(path, encoding="utf-8"))
+# 병합 — 사람 항목에 앱에서 붙인 키(메모 등)가 있으면 보존한다
+prev = {p.get("name", "") + "|" + p.get("rank", ""): p for p in db.get("people", [])}
+for p in people:
+    old = prev.get(p["name"] + "|" + p["rank"])
+    if old:
+        for k, v in old.items():
+            if k not in p:
+                p[k] = v
 db["people"] = people
 db["org"] = ORG
 io.open(path, "w", encoding="utf-8").write(json.dumps(db, ensure_ascii=False, indent=2))

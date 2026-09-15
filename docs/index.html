@@ -230,6 +230,14 @@ td.num{text-align:right;color:var(--dim);white-space:nowrap}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin-top:12px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 
+/* ── 백업 ── */
+.bkrow{display:flex;gap:10px;align-items:center;font-size:13px;padding:8px 0;border-top:1px solid var(--line)}
+.bkrow:first-of-type{border-top:none}
+.bkrow time{flex:none;width:132px;color:var(--dim);font-size:12px;font-variant-numeric:tabular-nums}
+.bkrow .cnt2{flex:1;color:var(--dim);font-size:12px}
+.bkrow .cnt2 b{color:var(--ink);font-variant-numeric:tabular-nums}
+.bkrow button{font-size:12px;padding:3px 10px}
+
 /* ── 위원회 · 교육 ── */
 .cmt{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:13px;overflow:hidden}
 .cmt>h3{margin:0;padding:11px 15px;background:var(--chip);font-size:14.5px;
@@ -534,6 +542,7 @@ textarea{resize:vertical;min-height:64px}
     <button id="exp">JSON 내보내기</button>
     <button id="tsv">표 복사(엑셀)</button>
     <button id="imp">가져오기</button>
+  <button id="bkp">백업 · 복원</button>
   </div>
 </nav>
 
@@ -562,6 +571,18 @@ textarea{resize:vertical;min-height:64px}
 <dialog id="pdlg">
   <div id="pbody"></div>
   <div class="act" style="margin-top:14px"><button onclick="pdlg.close()">닫기</button></div>
+</dialog>
+
+<dialog id="bdlg">
+  <h3 style="margin:0 0 4px;font-size:16px">백업 · 복원</h3>
+  <div class="none" id="bkinfo" style="margin-bottom:12px"></div>
+  <div id="bklist"></div>
+  <div class="act" style="margin-top:14px">
+    <button id="bkNow">지금 백업</button>
+    <button id="bkExport">파일로 내려받기</button>
+    <span class="spacer"></span>
+    <button onclick="bdlg.close()">닫기</button>
+  </div>
 </dialog>
 
 <dialog id="cdlg"><form method="dialog" id="cform">
@@ -4304,7 +4325,82 @@ function load(){
   try{ const s = localStorage.getItem(KEY); if(s) return normalize(JSON.parse(s)); }catch(e){}
   return normalize(SEED);
 }
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){} render();
+// ── 자동 백업 ────────────────────────────────────────────
+// 저장할 때마다 스냅샷을 쌓는다. 용량이 넘치면 오래된 것부터 버린다.
+const BKKEY = "eopmu_backup_v1", BKMAX = 8;
+function bkLoad(){ try{ return JSON.parse(localStorage.getItem(BKKEY)) || []; }catch(e){ return []; } }
+function bkStamp(json){
+  let db = {};
+  try{ db = JSON.parse(json); }catch(e){}
+  return {t: new Date().toISOString(), n: {
+    업무: (db.tasks||[]).length, 일정: (db.events||[]).length,
+    연락처: (db.contacts||[]).length, 문서: (db.docs||[]).length,
+    절차: (db.tasks||[]).filter(x=>(x.steps||[]).length).length,
+  }, d: json};
+}
+// 인자는 «저장 직전까지 유지되던» 상태의 JSON 문자열
+function bkPush(json){
+  if(!json) return;
+  let list = bkLoad();
+  const snap = bkStamp(json);
+  const last = list[list.length-1];
+  if(last && last.d === snap.d) return;          // 내용이 같으면 쌓지 않는다
+  list.push(snap);
+  while(list.length > BKMAX) list.shift();
+  // 용량 초과면 오래된 것부터 버리며 재시도
+  for(;;){
+    try{ localStorage.setItem(BKKEY, JSON.stringify(list)); return; }
+    catch(e){
+      if(list.length <= 1){ try{ localStorage.removeItem(BKKEY); }catch(e2){} return; }
+      list.shift();
+    }
+  }
+}
+function bkSize(){
+  try{ return ((localStorage.getItem(BKKEY)||"").length/1048576).toFixed(2); }catch(e){ return "?"; }
+}
+function renderBackups(){
+  const list = bkLoad().slice().reverse();
+  bkinfo.textContent = list.length
+    ? "저장할 때마다 자동으로 쌓입니다. 최근 " + BKMAX + "개 보관 · 현재 "
+      + list.length + "개 · " + bkSize() + "MB"
+    : "아직 백업이 없습니다. 무언가 저장하면 자동으로 쌓입니다.";
+  bklist.innerHTML = list.length ? list.map((b,i)=>{
+    const d = new Date(b.t);
+    const when = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-"
+      + String(d.getDate()).padStart(2,"0") + " " + String(d.getHours()).padStart(2,"0")
+      + ":" + String(d.getMinutes()).padStart(2,"0");
+    return '<div class="bkrow"><time>' + when + (i===0 ? " (최근)" : "") + '</time>'
+      + '<span class="cnt2">업무 <b>' + b.n.업무 + '</b> · 일정 <b>' + b.n.일정
+      + '</b> · 연락처 <b>' + b.n.연락처 + '</b> · 절차 <b>' + b.n.절차 + '</b></span>'
+      + '<button data-bkrestore="' + i + '">이 시점으로</button></div>';
+  }).join('') : '<div class="none">없음</div>';
+}
+bkp.onclick = ()=>{ renderBackups(); bdlg.showModal(); };
+bkNow.onclick = ()=>{ bkPush(JSON.stringify(DB)); renderBackups(); };
+bkExport.onclick = ()=>{
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(bkLoad(),null,2)],{type:"application/json"}));
+  a.download = "업무분장_백업_" + today() + ".json"; a.click();
+};
+bdlg.addEventListener("click", e=>{
+  const b = e.target.closest("[data-bkrestore]"); if(!b) return;
+  const list = bkLoad().slice().reverse();
+  const snap = list[+b.dataset.bkrestore]; if(!snap) return;
+  if(!confirm("이 시점으로 되돌립니다.\n\n지금 상태는 되돌리기 직전에 한 번 더 백업됩니다.\n계속할까요?")) return;
+  bkPush(JSON.stringify(DB));       // 되돌리기 직전 상태도 남긴다
+  DB = normalize(JSON.parse(snap.d));
+  lastSaved = snap.d;
+  try{ localStorage.setItem(KEY, snap.d); }catch(e){}
+  bdlg.close(); render();
+  alert("복원했습니다.");
+});
+
+let lastSaved = JSON.stringify(DB);
+function save(){
+  bkPush(lastSaved);                 // 바꾸기 직전 상태를 남긴다
+  lastSaved = JSON.stringify(DB);
+  try{ localStorage.setItem(KEY, lastSaved); }catch(e){} render();
   if(tdlg.open && curTask) openTask(curTask.id); }
 const L = s => (s||"").split("\n").map(x=>x.trim()).filter(Boolean);
 const C = s => (s||"").split(",").map(x=>x.trim()).filter(Boolean);

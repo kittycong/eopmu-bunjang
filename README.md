@@ -43,11 +43,19 @@
 `docs/index.html` 을 브라우저로 열면 끝. 편집 내용은 브라우저(localStorage)에 저장된다.
 여러 기기에서 쓰려면 `JSON 내보내기` → 다른 기기에서 `가져오기`.
 
+**백업** — 저장할 때마다 «바뀌기 직전» 상태가 자동으로 쌓인다(최근 8개).
+`백업 · 복원` 에서 시점을 골라 되돌릴 수 있고, 되돌리기 직전 상태도 남으므로 복원 자체를 취소할 수 있다.
+브라우저 데이터를 지우면 백업도 함께 사라지므로, 중요한 시점은 `파일로 내려받기` 로 보관할 것.
+
+**추출 스크립트는 덮어쓰지 않는다** — `extract_events.py` 는 id 기준으로 병합한다.
+앱에서 추가한 일정·교육 수료 기록·인계 이력은 재실행해도 남는다.
+
 ## 로컬에서 빌드
 
 ```bash
 python extract_people.py     # 엑셀 -> 직원 명단
-python extract_events.py     # 엑셀 -> 센터 일정 · 지침 목록
+python extract_events.py     # 엑셀 -> 센터 일정 · 지침 목록 (병합: 기존 항목 보존)
+python extract_events.py --refresh   # 시트 값으로 기존 항목까지 갱신
 python anonymize.py          # 실명본 -> 공개 마스킹본
 python build.py both         # index.html(내부) + docs/index.html(공개)
 python make_handover.py 홍길동          # 인계 문서 docx + html
