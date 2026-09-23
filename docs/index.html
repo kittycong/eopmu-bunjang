@@ -1,5 +1,7 @@
 <meta charset="utf-8">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>업무분장 인수인계</title>
 <style>
@@ -7,7 +9,7 @@
   --bg:#f6f5f2; --card:#fff; --ink:#1c1b19; --dim:#6b675f; --line:#e2ded6;
   --keep:#4b6bdc; --out:#c2410c; --in:#0f766e; --common:#7a7566; --tbd:#9333ea;
   --accent:#1c1b19; --chip:#efece6; --warn:#b91c1c; --zebra:#faf9f6;
-  --nav:#26241f; --nav-ink:#e9e5dc; --nav-dim:#9a9488; --nav-line:#3a362f; --nav-hover:#332f28;
+  --nav:#f3ead9; --nav-ink:#3d3527; --nav-dim:#8f8267; --nav-line:#e1d3b3; --nav-hover:#ecdfc4;
   --amber2:#8a6410;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -201,18 +203,18 @@ td.num{text-align:right;color:var(--dim);white-space:nowrap}
 /* ── 캘린더 ── */
 .calhead{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
 .calhead h3{margin:0;font-size:18px;min-width:120px;text-align:center}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:700px}
+.cal{display:grid;grid-template-columns:.74fr repeat(5,1fr) .74fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:540px}
 .calscroll{overflow-x:auto}
-.cal .dow{background:var(--chip);text-align:center;font-size:11px;color:var(--dim);padding:6px 0;font-weight:600}
+.cal .dow{background:var(--chip);text-align:center;font-size:10.5px;color:var(--dim);padding:6px 0;font-weight:600}
 .cal .dow.sun{color:var(--warn)}
-.cell{background:var(--card);min-height:92px;padding:5px 6px}
+.cell{background:var(--card);min-height:62px;max-height:160px;overflow-y:auto;padding:4px 5px}
 .cell.pad{background:var(--zebra);opacity:.5}
 .cell.today{outline:2px solid var(--keep);outline-offset:-2px}
-.cell>.dnum{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums;margin-bottom:3px}
+.cell>.dnum{font-size:10.5px;color:var(--dim);font-variant-numeric:tabular-nums;margin-bottom:3px;position:sticky;top:0}
 .cell.sun>.dnum{color:var(--warn)}
-.ev{font-size:11px;line-height:1.35;padding:2px 5px;border-radius:4px;margin-bottom:2px;cursor:pointer;
+.ev{font-size:10.2px;line-height:1.3;padding:2px 4px;border-radius:4px;margin-bottom:2px;cursor:pointer;
     background:var(--chip);color:var(--ink);border-left:3px solid var(--dim);
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    overflow-wrap:break-word;word-break:keep-all;white-space:normal}
 .ev:hover{filter:brightness(.95)}
 .ev[data-k="task"]{border-left-color:var(--keep)}
 .ev[data-k="out"]{border-left-color:var(--out)}
@@ -230,6 +232,12 @@ td.num{text-align:right;color:var(--dim);white-space:nowrap}
 .strip .ev{display:inline-block;margin-right:5px;white-space:normal;max-width:100%}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin-top:12px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+/* ── 캘린더 · 이중 보기(내 업무 / 전체 회사) ── */
+.caldual{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.calpanel{min-width:0}
+.calptitle{display:flex;align-items:baseline;gap:6px;margin:0 0 8px;font-size:14px;font-weight:700}
+.calptitle small{font-weight:400;color:var(--dim);font-size:11.5px}
+@media (max-width:860px){.caldual{grid-template-columns:1fr}}
 
 /* ── 인수인계서 출력 ── */
 .docbar{display:flex;flex-wrap:wrap;gap:7px;align-items:center;background:var(--card);
@@ -532,8 +540,13 @@ textarea{resize:vertical;min-height:64px}
 
   <div class="navgrp" id="favGrp" hidden><b>즐겨찾기</b><div id="favList"></div></div>
 
+  <div class="navgrp"><b>일정</b>
+    <button class="v on" data-v="cal">캘린더</button>
+    <button class="v" data-v="events">사업·점검 일정</button>
+    <button class="v" data-v="edu">교육 · 수료</button>
+  </div>
   <div class="navgrp"><b>현황</b>
-    <button class="v on" data-v="dash">대시보드</button>
+    <button class="v" data-v="dash">대시보드</button>
   </div>
   <div class="navgrp"><b>업무</b>
     <button class="v" data-v="card">카드</button>
@@ -542,11 +555,6 @@ textarea{resize:vertical;min-height:64px}
   </div>
   <div class="navgrp"><b>인수인계</b>
     <button class="v" data-v="doc">인수인계서</button>
-  </div>
-  <div class="navgrp"><b>일정</b>
-    <button class="v" data-v="cal">캘린더</button>
-    <button class="v" data-v="events">사업·점검 일정</button>
-    <button class="v" data-v="edu">교육 · 수료</button>
   </div>
   <div class="navgrp"><b>조직</b>
     <button class="v" data-v="org">조직도</button>
@@ -660,6 +668,65 @@ textarea{resize:vertical;min-height:64px}
     <span class="spacer"></span><button value="del" formnovalidate id="cdel" style="color:var(--warn)">삭제</button>
   </div>
 </form></dialog>
+
+<dialog id="perdlg"><form method="dialog" id="perform">
+  <h3 id="pertitle" style="margin:0 0 8px;font-size:16px">인원 추가</h3>
+  <div class="row">
+    <div><label class="f">성명</label><input type="text" name="name" required placeholder="예: 김O원, 공석은 (공석)"></div>
+    <div><label class="f">부서</label><input type="text" name="dept" list="deptList" required></div>
+  </div>
+  <datalist id="deptList"></datalist>
+  <div class="row">
+    <div><label class="f">팀(선택)</label><input type="text" name="team"></div>
+    <div><label class="f">직급</label><input type="text" name="rank" list="rankList" required></div>
+  </div>
+  <datalist id="rankList"></datalist>
+  <label class="f">역할·업무비율 요약</label><input type="text" name="role" placeholder="예: 사무국 총괄">
+  <label class="f">업무비율(재원)</label><input type="text" name="ratio" placeholder="예: 활동지원사업 100%">
+  <label class="f">비고</label><input type="text" name="note">
+  <label class="f">담당업무 — 한 줄에 하나씩</label><textarea name="duties" style="min-height:80px"></textarea>
+  <div class="act" style="margin-top:14px">
+    <button value="ok">저장</button><button value="cancel" formnovalidate>취소</button>
+    <span class="spacer"></span><button value="del" formnovalidate id="perdel" style="color:var(--warn)">삭제</button>
+  </div>
+</form></dialog>
+
+<dialog id="cmtdlg"><form method="dialog" id="cmtform">
+  <h3 id="cmttitle" style="margin:0 0 8px;font-size:16px">위원회 추가</h3>
+  <label class="f">위원회명</label><input type="text" name="name" required placeholder="예: 대표 · 감사">
+  <div class="row">
+    <div><label class="f">근거(규정)</label><input type="text" name="doc" placeholder="예: 정관"></div>
+    <div><label class="f">구성 기준</label><input type="text" name="rule" placeholder="예: 대표 임기 3년 · 연임 가능"></div>
+  </div>
+  <label class="f">비고</label><input type="text" name="note">
+  <div class="act" style="margin-top:14px">
+    <button value="ok">저장</button><button value="cancel" formnovalidate>취소</button>
+    <span class="spacer"></span><button value="del" formnovalidate id="cmtdel" style="color:var(--warn)">위원회 삭제</button>
+  </div>
+</form></dialog>
+
+<dialog id="cmtmdlg"><form method="dialog" id="cmtmform">
+  <h3 style="margin:0 0 8px;font-size:16px">위원 추가·수정</h3>
+  <div class="row">
+    <div><label class="f">직위·역할</label><input type="text" name="role" placeholder="예: 대표"></div>
+    <div><label class="f">성명</label><input type="text" name="name" placeholder="미기재면 공석"></div>
+  </div>
+  <div class="row">
+    <div><label class="f">구분</label><input type="text" name="kind" placeholder="예: 선출 · 위촉 · 당연직"></div>
+    <div><label class="f">연임 여부</label><input type="text" name="renew" placeholder="예: 가능 · 1회 가능 · 불가"></div>
+  </div>
+  <div class="row">
+    <div><label class="f">임기 시작</label><input type="date" name="start"></div>
+    <div><label class="f">임기 종료</label><input type="date" name="end"></div>
+  </div>
+  <div class="act" style="margin-top:14px">
+    <button value="ok">저장</button><button value="cancel" formnovalidate>취소</button>
+    <span class="spacer"></span><button value="del" formnovalidate id="cmtmdel" style="color:var(--warn)">이 위원 삭제</button>
+  </div>
+</form></dialog>
+
+<input type="file" id="pplXlsxFile" accept=".xlsx,.xls" hidden>
+<input type="file" id="cmtXlsxFile" accept=".xlsx,.xls" hidden>
 
 <dialog id="ndlg"><form method="dialog" id="nform">
   <h3 id="ntitle" style="margin:0 0 8px;font-size:16px">일정 추가</h3>
@@ -811,3554 +878,3670 @@ textarea{resize:vertical;min-height:64px}
 
 <script>
 const SEED = {
-  "meta": {
-    "소속": "구로장애인자립생활센터 사무행정실",
-    "작성자": "김O원 (간사)",
-    "기준일": "2026-09-14",
-    "적용": "2026년 10월 업무 재분장",
-    "원본": "2026년 행정팀 업무분장(복사본).xlsx — 업무분담 / 보험 및 이용권 / 신고 및 보고 / 위원회 / 2026.09.01.",
-    "구분설명": {
-      "keep": "계속 내 업무",
-      "out": "내가 남에게 인계(넘김)",
-      "in": "남에게서 인수(받음)",
-      "common": "다같이 = 사무국 공통업무",
-      "tbd": "담당 미정 — 확인 필요"
-    },
-    "me": "김O원",
-    "공개": "공개 배포본 — 성명 마스킹 · 연락처 삭제 · 캡처 미포함. 실명 원본은 내부 보관."
+ "meta": {
+  "소속": "구로장애인자립생활센터 사무행정실",
+  "작성자": "김O원 (간사)",
+  "기준일": "2026-09-14",
+  "적용": "2026년 10월 업무 재분장",
+  "원본": "2026년 행정팀 업무분장(복사본).xlsx — 업무분담 / 보험 및 이용권 / 신고 및 보고 / 위원회 / 2026.09.01.",
+  "구분설명": {
+   "keep": "계속 내 업무",
+   "out": "내가 남에게 인계(넘김)",
+   "in": "남에게서 인수(받음)",
+   "common": "다같이 = 사무국 공통업무",
+   "tbd": "담당 미정 — 확인 필요"
   },
-  "tasks": [
-    {
-      "id": "k-bokjigigum-acc",
-      "name": "장애인복지기금 회계관리",
-      "cat": "회계",
-      "type": "keep",
-      "counterpart": "",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "복지기금 재원의 기안문서 작성·정리, 일반지출 처리, 회계관리 전반.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "prio": 5,
-      "owner": "김O원",
-      "final": true,
-      "shots": []
-    },
-    {
-      "id": "k-cheowoo-acc",
-      "name": "처우개선비 회계관리",
-      "cat": "회계",
-      "type": "keep",
-      "counterpart": "",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "사무국 처우개선비 담당. 처우개선비 재원 기안문서 정리·일반지출·입출 및 회계관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "owner": "김O원",
-      "final": true,
-      "shots": []
-    },
-    {
-      "id": "k-jungjeung-acc",
-      "name": "중증장애인센터지원 · 민간단체보조금 · 시설운영 회계관리",
-      "cat": "회계",
-      "type": "keep",
-      "counterpart": "조O민",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "중증장애인자립생활센터사업, 거주시설연계사업, 민간단체보조금, 시설운영 재원의 입출 업무 및 회계관리. 업무비율상 주력 업무(중증장애인센터지원 100%).",
-      "systems": [
-        "보탬E"
-      ],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "⚠ 최종 분장표에 별도 표기 없음 — 서울시·구비 재원과 중복인지 확인",
-        "'업무분담' 시트는 26년 담당=조O민, 10월=김O원으로 인수 처리. '2026.09.01.' 시트는 이미 김O원 담당으로 기재 — 실제로는 이미 수행 중이면 keep, 10월부터면 in 으로 바꿀 것"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "shots": []
-    },
-    {
-      "id": "k-yegyeolsan",
-      "name": "예·결산 작성",
-      "cat": "회계",
-      "type": "keep",
-      "counterpart": "",
-      "cycle": "연 2회",
-      "deadline": "결산 3월 31일까지 / 예산 회기년도 시작 5일 전(12월 26일)",
-      "desc": "담당 재원 예산서·결산서 작성. 지자체 제출 후 홈페이지에 20일 이상 공고 필요.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "홈페이지 공고 20일 이상 — 마감 역산해서 업로드 시점 잡을 것",
-        "'신고 및 보고' 시트상 결산·예산 보고는 '공통'"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "shots": []
-    },
-    {
-      "id": "k-insa-register",
-      "name": "사무국 직원 인사정보 등록",
-      "cat": "인사",
-      "type": "keep",
-      "counterpart": "",
-      "cycle": "발생시",
-      "deadline": "",
-      "desc": "사무국 직원 인사정보 등록·갱신.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "shots": []
-    },
-    {
-      "id": "k-jikin",
-      "name": "직인 및 인감 관리",
-      "cat": "총무",
-      "type": "keep",
-      "counterpart": "",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "센터 직인·인감 보관 및 날인 관리. 전담업무.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "문서·공문",
-      "shots": []
-    },
-    {
-      "id": "k-jeungmyeongseo",
-      "name": "증명서 발급",
-      "cat": "인사",
-      "type": "keep",
-      "counterpart": "",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "재직증명서·경력증명서 등 발급.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "'업무분담' 시트에는 '다같이', '2026.09.01.' 시트에는 김O원 담당 — 확정 필요"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "직원지원",
-      "shots": []
-    },
-    {
-      "id": "k-mulpum",
-      "name": "물품관리 담당",
-      "cat": "총무",
-      "type": "keep",
-      "counterpart": "",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "센터 물품 관리 담당. ('2026.09.01.' 업무분장표 기재)",
-      "systems": [
-        "문서생성 시스템"
-      ],
-      "steps": [],
-      "assets": [
-        "문서생성 시스템 [물품구매(내부기안)] — 내부기안 + 산출기초조사서 + 비교견적 3곳 · https://chulchang-munseo.vercel.app/"
-      ],
-      "traps": [
-        "인수 예정인 '비품관리'와 범위 중복 여부 확인 — 하나로 합칠지 결정"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "비품·자산",
-      "shots": []
-    },
-    {
-      "id": "k-unyeongwi",
-      "name": "운영위원회 관련 업무",
-      "cat": "총무",
-      "type": "keep",
-      "counterpart": "",
-      "cycle": "분기별 1회",
-      "deadline": "",
-      "desc": "운영위원회 자료집 제작, 회의 준비, 안건정리, 회의록 작성.",
-      "systems": [
-        "문서생성 시스템"
-      ],
-      "steps": [],
-      "assets": [
-        "문서생성 시스템 [운영위원회] — 운영위원회 안건·자료 생성 · https://chulchang-munseo.vercel.app/"
-      ],
-      "traps": [
-        "'업무분담' 시트는 '다같이', '2026.09.01.' 시트는 김O원 담당 — 확정 필요",
-        "운영위원 임기 2023.02.28~2026.02.28 이미 종료 — 재구성 여부 확인",
-        "활동지원사업 운영위원은 담당 공무원·활동지원사 대표·수급자 대표 필수 구성"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "회의체",
-      "shots": []
-    },
-    {
-      "id": "k-hyugesil",
-      "name": "휴게실 당번 관리",
-      "cat": "총무",
-      "type": "keep",
-      "counterpart": "",
-      "cycle": "매월 1회",
-      "deadline": "",
-      "desc": "휴게실 청소 당번표 편성·공지. 전담업무. 당번표는 웹앱으로 관리.",
-      "systems": [
-        "구로 당번표 웹앱"
-      ],
-      "steps": [
-        "danbun_data.json 수정 (employees / personnelChanges / scheduleAnchors)",
-        "SCHEDULE_VERSION 상수 갱신",
-        "되살아나면 안 되는 인원은 index.html CANCELLED_PERSONNEL 에 추가",
-        "로컬 정적서버로 검증 후 main2 브랜치 푸시"
-      ],
-      "assets": [
-        "C:\\Users\\user\\Desktop\\클로드 코워크\\guro_dangbun",
-        "https://kittycong.github.io/guro_dangbun/"
-      ],
-      "traps": [
-        "배포 브랜치가 main 아니라 main2",
-        "localStorage(danbun_v2) 병합 때문에 json만 고치면 반영 안 될 수 있음"
-      ],
-      "log": [],
-      "done": [],
-      "files": [
-        "danbun_data.json (당번 인원·일정 원본)"
-      ],
-      "sub": "직원지원",
-      "shots": []
-    },
-    {
-      "id": "k-bread",
-      "name": "후원물품 — 빵 (장블랑제리) 수령증",
-      "cat": "후원물품",
-      "type": "keep",
-      "counterpart": "",
-      "cycle": "매월",
-      "deadline": "",
-      "desc": "장블랑제리(해피피플) 빵 후원품 거래명세 검증 후 물품수령증 작성·날인·보관. 후원물품 중 빵만 김O원 유지, 그 외 물품은 김O리 담당.",
-      "systems": [
-        "한글(hwpx)",
-        "엑셀",
-        "문서생성 시스템"
-      ],
-      "steps": [
-        "날짜별 거래명세 엑셀 합산 검증 (총수량 SUM 범위 잘림 상습)",
-        "정리본 엑셀 생성",
-        "날짜별 물품수령증 hwpx 생성",
-        "합본 hwpx → PDF",
-        "출력 후 직인 수기 날인",
-        "스캔본 '..._합본_스캔.pdf' 로 수령증 폴더 보관"
-      ],
-      "assets": [
-        "클로드 스킬: jangblanc-donation-workflow",
-        "문서생성 시스템 [장블랑제리 합본] — 출장신청서+복명서 합본 1파일 생성 · https://chulchang-munseo.vercel.app/"
-      ],
-      "traps": [
-        "한컴 COM 은 Visible=true 필수, InsertFile 은 CreateAction 으로만 호출",
-        "KeepSection=1 + BreakPage 겹치면 빈 페이지 생김"
-      ],
-      "log": [],
-      "done": [],
-      "files": [
-        "물품수령증_YYYY-MM_합본.hwpx",
-        "거래명세 정리본_YYYY-MM.xlsx"
-      ],
-      "sub": "후원·상품권",
-      "shots": []
-    },
-    {
-      "id": "o-bokjiiljari-acc",
-      "name": "복지일자리 회계관리",
-      "cat": "회계",
-      "type": "out",
-      "counterpart": "최O연",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "복지일자리 재원 기안문서 정리·일반지출·회계관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "prio": 5,
-      "final": true,
-      "shots": []
-    },
-    {
-      "id": "o-bokjiiljari-biz",
-      "name": "복지일자리사업",
-      "cat": "사업",
-      "type": "out",
-      "counterpart": "최O연",
-      "cycle": "수시 / 급여 매월 5일",
-      "deadline": "복지일자리 급여 지급 매월 5일",
-      "desc": "사업장 신고, 입·퇴사 신고, 급여 지급, 인력관리, 대상자 업무 관리 등 사업 전반.",
-      "systems": [
-        "E나라"
-      ],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "급여 지급 마감이 매월 5일 — 인계 시 첫 달 마감 같이 돌려볼 것"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "prio": 5,
-      "final": true,
-      "shots": []
-    },
-    {
-      "id": "o-huwon-acc",
-      "name": "후원금 — 회계관리",
-      "cat": "후원금",
-      "type": "out",
-      "counterpart": "최O연",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "후원금 재원 기안문서 정리·일반지출·입출 및 회계관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "prio": 5,
-      "final": true,
-      "shots": []
-    },
-    {
-      "id": "o-huwon-cms",
-      "name": "후원금 — 모금·정산 (CMS·결과보고)",
-      "cat": "후원금",
-      "type": "out",
-      "counterpart": "최O연",
-      "cycle": "수시 / 결과보고 연 1회",
-      "deadline": "후원금 결과 보고 3월 31일까지",
-      "desc": "후원 CMS 관리(정기후원 결제·해지), 기부금영수증 발급, 후원금 정산보고서 작성. 후원금 결과보고는 지자체 제출 후 홈페이지에 20일 이상 공고.",
-      "systems": [
-        "후원 CMS"
-      ],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "홈페이지 20일 이상 공고 요건 — 3월 31일 마감 역산",
-        "후원물품(현물)은 이 보고에 포함하지 않음 — 후원물품 배분대장으로 별도 관리"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "후원·상품권",
-      "prio": 5,
-      "final": true,
-      "shots": []
-    },
-    {
-      "id": "o-huwon-mulpum",
-      "name": "후원물품 — 빵 외 접수·배분",
-      "cat": "후원물품",
-      "type": "out",
-      "counterpart": "김O리",
-      "cycle": "발생시",
-      "deadline": "",
-      "desc": "빵 이외 후원물품 접수, 물품수령증 발급, 대상자 배분 및 배분대장 관리.",
-      "systems": [
-        "문서생성 시스템"
-      ],
-      "steps": [],
-      "assets": [
-        "문서생성 시스템 [물품수령증] — 후원물품 수령증 · 품목표 + 사진 첨부 · https://chulchang-munseo.vercel.app/"
-      ],
-      "traps": [
-        "⚠ 최종 분장표의 «후원 최O연»에 포함되는지 확인 (현재 김O리 인계)",
-        "빵 / 빵 외 경계로 담당이 갈림 — 수령증 발급 주체 혼동 주의",
-        "물품 후원은 후원금과 별개 장부·별개 보고 — 후원금 결과보고에 섞지 말 것"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "후원·상품권",
-      "shots": []
-    },
-    {
-      "id": "o-insahoeui",
-      "name": "인사회의 정리",
-      "cat": "인사",
-      "type": "out",
-      "counterpart": "최O연",
-      "cycle": "발생시",
-      "deadline": "",
-      "desc": "인사회의 안건 정리 및 회의록 작성.",
-      "systems": [
-        "문서생성 시스템"
-      ],
-      "steps": [],
-      "assets": [
-        "문서생성 시스템 [인사회의록] — 인사회의록 생성 · https://chulchang-munseo.vercel.app/"
-      ],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "shots": []
-    },
-    {
-      "id": "o-chaeyong",
-      "name": "직원 채용 관리",
-      "cat": "인사",
-      "type": "out",
-      "counterpart": "최O연",
-      "cycle": "발생시",
-      "deadline": "",
-      "desc": "채용공고 게시, 지원자 접수·관리, 면접 진행·관리 등 채용 전반.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "prio": 5,
-      "final": true,
-      "shots": []
-    },
-    {
-      "id": "o-susinmunseo",
-      "name": "수신문서 관리",
-      "cat": "총무",
-      "type": "out",
-      "counterpart": "최O연",
-      "cycle": "매일",
-      "deadline": "",
-      "desc": "센터 수신문서 접수·분류·배부. 전담업무, 매일 처리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "매일 업무 — 인계 공백 생기면 바로 누락됨. 인계일 기준 미처리분 목록 같이 넘길 것"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "문서·공문",
-      "prio": 5,
-      "final": true,
-      "shots": []
-    },
-    {
-      "id": "o-charyang",
-      "name": "차량일지 · 차량관리",
-      "cat": "총무",
-      "type": "out",
-      "counterpart": "최O연",
-      "cycle": "발생시 / 운행일지 매월",
-      "deadline": "자동차보험 갱신: 레이 6월 18일, 스타렉스 10월 24일",
-      "desc": "차량 운행일지, 배차 현황, 점검관리 현황 관리. 대상 차량 = 레이, 스타렉스.",
-      "systems": [
-        "차량운행일지 웹앱"
-      ],
-      "steps": [],
-      "assets": [
-        "C:\\Users\\user\\Desktop\\♥휘원 개인업무폴더\\@클로드 전용폴더\\vehicle-log-app"
-      ],
-      "traps": [
-        "'보험 및 이용권' 시트는 레이·스타렉스 자동차보험 26년10월 담당을 김O원으로 표기 — 차량관리를 최O연에게 넘기면 보험 갱신도 같이 가는지 확인 필요",
-        "스타렉스 보험 만기 10월 24일 — 인계 직후 도래"
-      ],
-      "log": [],
-      "done": [],
-      "files": [
-        "차량운행일지_2026.xlsx",
-        "배차신청서.hwp",
-        "차량 점검관리대장.xlsx"
-      ],
-      "shots": [],
-      "sub": "차량",
-      "final": true
-    },
-    {
-      "id": "o-homepage",
-      "name": "홈페이지 관리 (grcil.kr)",
-      "cat": "사업",
-      "type": "out",
-      "counterpart": "최O연",
-      "cycle": "수시",
-      "deadline": "웹모아 도메인·유지보수 연장 11월 28일",
-      "desc": "센터 홈페이지 게시물 등록·수정 요청, 공고물 업로드(예·결산, 후원금 결과보고 20일 공고), 웹모아 유지보수 계약 관리.",
-      "systems": [
-        "WIMS 게시판(웹모아)"
-      ],
-      "steps": [
-        "게시물 등록·수정은 WIMS 게시판으로 웹모아에 요청",
-        "연간 유지보수 계약·도메인 연장 확인 (11월 28일)"
-      ],
-      "assets": [
-        "http://www.grcil.kr/"
-      ],
-      "traps": [
-        "개발완료 후 수정은 유료 (계약 제13조4항)",
-        "디자인·프로그램·스톡이미지는 이전 불가, 콘텐츠만 이전 가능",
-        "도메인 연장 만기 11월 28일 — 인계 직후 도래, 누락 주의"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "전산·장비",
-      "shots": []
-    },
-    {
-      "id": "i-jageumilbo",
-      "name": "자금일보",
-      "cat": "회계",
-      "type": "in",
-      "counterpart": "조O민",
-      "cycle": "매일",
-      "deadline": "매일",
-      "desc": "일일 자금 입출 현황 작성. 전담업무, 매일 처리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "매일 업무 — 인수 첫날부터 끊기면 안 됨. 양식·계좌 목록·작성 기준 먼저 받을 것"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "prio": 2,
-      "owner": "김O원",
-      "final": true,
-      "shots": []
-    },
-    {
-      "id": "i-geupyeo",
-      "name": "급여 (사무국직원)",
-      "cat": "인사",
-      "type": "in",
-      "counterpart": "조O민",
-      "cycle": "매월",
-      "deadline": "매월 25일까지",
-      "desc": "사무국 직원 급여, 사회보험금, 퇴직적립금 이체.",
-      "systems": [
-        "보탬E"
-      ],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "마감 25일 고정 — 인수 첫 달 반드시 동행 처리",
-        "원천세·지방소득세 신고(매월 10일, 노O숙)와 연동됨"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "prio": 1,
-      "owner": "김O원",
-      "final": true,
-      "shots": []
-    },
-    {
-      "id": "i-gyeyak",
-      "name": "사무국직원 계약 관리",
-      "cat": "인사",
-      "type": "in",
-      "counterpart": "조O민",
-      "cycle": "발생시",
-      "deadline": "",
-      "desc": "사무국 직원 근로계약서 작성·갱신·보관 관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "⚠ 최종 분장표에 없음 — 담당 확인 필요",
-        "기존 계약서 원본 보관 위치 인수받을 것"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "shots": []
-    },
-    {
-      "id": "i-beomjoe",
-      "name": "사무국 직원 범죄경력조회",
-      "cat": "인사",
-      "type": "other",
-      "counterpart": "최O연",
-      "cycle": "연 1회",
-      "deadline": "",
-      "desc": "범죄경력·장애인학대 관련 경력 조회. 기존 근로자는 연 1회 센터가 조회, 신규 입사자는 입사자 본인이 조회.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "기존자/신규자 조회 주체가 다름 — 혼동 주의"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "owner": "최O연",
-      "prio": "",
-      "status": "미착수",
-      "final": true,
-      "shots": []
-    },
-    {
-      "id": "i-saboheom-jeongsan",
-      "name": "사회보험 정산",
-      "cat": "인사",
-      "type": "in",
-      "counterpart": "조O민",
-      "cycle": "연 1회",
-      "deadline": "5월 중",
-      "desc": "사회보험료 연간 정산.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "⚠ 최종 분장표에 없음 — 담당 확인 필요",
-        "'신고 및 보고' 시트상 사회보험료정산 담당은 '공통'"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "shots": []
-    },
-    {
-      "id": "i-saboheom-singo",
-      "name": "사회보험 신고 (공동)",
-      "cat": "인사",
-      "type": "in",
-      "counterpart": "노O숙",
-      "cycle": "수시 / 매월",
-      "deadline": "신규입사자·퇴사자 사회보험 신고 매월 14일까지",
-      "desc": "사무국·활동지원사 사회보험 취득·상실 신고. 10월부터 김O원·노O숙 공동 담당.",
-      "systems": [
-        "고용산재토탈서비스"
-      ],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "⚠ 최종 분장표에 없음 — 담당 확인 필요",
-        "공동 담당 — 누가 어느 대상(사무국/활동지원사)을 맡는지 경계 먼저 정할 것",
-        "보수총액신고 3월 14일까지(고용산재, 공통)"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "shots": []
-    },
-    {
-      "id": "i-bipum",
-      "name": "비품관리",
-      "cat": "총무",
-      "type": "in",
-      "counterpart": "조O민",
-      "cycle": "분기별 1회 / 재물조사 연 1회",
-      "deadline": "재물조사 연 1회",
-      "desc": "센터 비품 현황 관리. 전담업무. 재물조사 연 1회 실시.",
-      "systems": [
-        "문서생성 시스템"
-      ],
-      "steps": [],
-      "assets": [
-        "문서생성 시스템 [물품구매(내부기안)] — 내부기안 + 산출기초조사서 + 비교견적 3곳 · https://chulchang-munseo.vercel.app/"
-      ],
-      "traps": [
-        "⚠ 최종 분장표에 없음 — 담당 확인 필요",
-        "기존 '물품관리담당'과 범위 중복 확인",
-        "재물조사 대장 인수받을 것"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "비품·자산",
-      "shots": []
-    },
-    {
-      "id": "i-timoney",
-      "name": "법인티머니 · 법인 교통카드 관리",
-      "cat": "총무",
-      "type": "in",
-      "counterpart": "조O민",
-      "cycle": "수시 / 연 관리비 1회",
-      "deadline": "법인 교통카드 연 관리비 7월 3일",
-      "desc": "법인티머니 카드 발급·충전·사용내역 정산. 법인 교통카드 연 관리비 납부(재원: 활동지원사업, 운영).",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "⚠ 최종 분장표에 없음 — 담당 확인 필요"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "계정·카드",
-      "shots": []
-    },
-    {
-      "id": "i-injeungseo",
-      "name": "인증서 관리",
-      "cat": "총무",
-      "type": "in",
-      "counterpart": "조O민",
-      "cycle": "연 1회",
-      "deadline": "4월 4일 (갱신)",
-      "desc": "센터 공동인증서 발급·갱신·보관 관리. 재원: 활동지원사업.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "⚠ 최종 분장표에 없음 — 담당 확인 필요 (4월 4일 만기, 누락 시 시스템 전면 중단)",
-        "만기 놓치면 보탬E·홈텍스·인터넷뱅킹 전부 막힘 — 최우선 인수 항목"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "계정·카드",
-      "shots": []
-    },
-    {
-      "id": "i-jadongcha-boheom",
-      "name": "자동차보험 갱신 (레이 · 스타렉스)",
-      "cat": "총무",
-      "type": "in",
-      "counterpart": "조O민",
-      "cycle": "연 1회 (차량별)",
-      "deadline": "레이 6월 18일 / 스타렉스 10월 24일",
-      "desc": "법인 차량 자동차보험 갱신. 재원: 운영.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "⚠ 최종 분장표에 없음 — 차량일지가 최O연이면 함께 가는지 확인",
-        "⚠ 차량관리 본체는 최O연에게 인계하는데 보험 갱신만 김O원으로 표기됨 — 담당 확정 필요",
-        "스타렉스 10월 24일 만기 — 재분장 직후 도래"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "차량",
-      "shots": []
-    },
-    {
-      "id": "t-saengil",
-      "name": "사무국 생일 챙기기",
-      "cat": "총무",
-      "type": "tbd",
-      "counterpart": "",
-      "cycle": "발생시",
-      "deadline": "",
-      "desc": "사무국 직원 생일 관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "'26년 10월 담당' 공란 — 유지/인계 확정 필요"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "직원지원",
-      "shots": []
-    },
-    {
-      "id": "c-boheom",
-      "name": "각종보험",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "센터 각종 보험 가입·갱신 관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "규정·계약",
-      "shots": []
-    },
-    {
-      "id": "c-gyeyak",
-      "name": "계약관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "발생시",
-      "deadline": "",
-      "desc": "소모품 계약 및 각종 계약 관리 총괄.",
-      "systems": [
-        "문서생성 시스템"
-      ],
-      "steps": [],
-      "assets": [
-        "문서생성 시스템 [고정거래(내부기안)] — 고정거래 기안 · 과거 기안에서 찾아 채우기 · https://chulchang-munseo.vercel.app/"
-      ],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "규정·계약",
-      "shots": []
-    },
-    {
-      "id": "c-gonggong",
-      "name": "공공요금 관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "매월 1회",
-      "deadline": "",
-      "desc": "전기·수도·통신 등 공공요금 납부 관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "계정·카드",
-      "shots": []
-    },
-    {
-      "id": "c-naegyu",
-      "name": "내규 관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "발생시",
-      "deadline": "",
-      "desc": "취업규칙 및 센터 규정 관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "규정·계약",
-      "shots": []
-    },
-    {
-      "id": "c-changgo",
-      "name": "내부창고 관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "내부창고 총괄 관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "문서·공문",
-      "shots": []
-    },
-    {
-      "id": "c-notebook",
-      "name": "노트북 관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "주 1회",
-      "deadline": "",
-      "desc": "노트북 충전·관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "케어플러스 2024.4월 종료 — 재가입 불가"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "전산·장비",
-      "shots": []
-    },
-    {
-      "id": "c-mujeongi",
-      "name": "무전기 관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "월 1회",
-      "deadline": "",
-      "desc": "무전기 점검·충전 관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "비품·자산",
-      "shots": []
-    },
-    {
-      "id": "c-server",
-      "name": "서버 관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "폴더 및 파일 관리, 사용자 관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "전산·장비",
-      "shots": []
-    },
-    {
-      "id": "c-serverroom",
-      "name": "서버실 관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "매일",
-      "deadline": "",
-      "desc": "서버 리부팅 및 서버실 내부 정리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "전산·장비",
-      "shots": []
-    },
-    {
-      "id": "c-center",
-      "name": "센터 내부 관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "센터 내 비품 등 유지관리 총괄.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "비품·자산",
-      "shots": []
-    },
-    {
-      "id": "c-somopum",
-      "name": "소모품 관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "소모품 현황 파악 및 구매.",
-      "systems": [
-        "문서생성 시스템"
-      ],
-      "steps": [],
-      "assets": [
-        "문서생성 시스템 [물품구매(내부기안)] — 소모품 구매 기안 · https://chulchang-munseo.vercel.app/"
-      ],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "비품·자산",
-      "shots": []
-    },
-    {
-      "id": "c-swhw",
-      "name": "소프트웨어 및 하드웨어 관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "각 프로그램 설치 및 유지 관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [
-        "구독 갱신: 비즈폼 8/9, 미리캔버스 8/12, DAUM 메일 5/7, Adobe·ChatGPT·Claude 별도 관리"
-      ],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "전산·장비",
-      "shots": []
-    },
-    {
-      "id": "c-chonghoe",
-      "name": "총회",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "연 1회 이상",
-      "deadline": "",
-      "desc": "총회 자료집 제작·준비, 안건정리, 회의록.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "회의체",
-      "shots": []
-    },
-    {
-      "id": "c-hwilchair",
-      "name": "휠체어 관리",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "다같이",
-      "cycle": "주 1회",
-      "deadline": "",
-      "desc": "휠체어 충전·관리.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "비품·자산",
-      "shots": []
-    },
-    {
-      "id": "c-handtowel",
-      "name": "핸드타올",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "공통",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "핸드타올 비치·보충. 조O민 → 공통으로 전환.",
-      "systems": [],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "비품·자산",
-      "shots": []
-    },
-    {
-      "id": "c-singo",
-      "name": "각종 신고",
-      "cat": "총무",
-      "type": "common",
-      "counterpart": "노O숙",
-      "cycle": "발생시",
-      "deadline": "장애인고용부담금·고용현황 1월 31일",
-      "desc": "장애인고용장려금, 외부 요청 문서 등 신고. 26년10월 담당 노O숙.",
-      "systems": [
-        "한국장애인고용공단 E신고"
-      ],
-      "steps": [],
-      "assets": [],
-      "traps": [],
-      "log": [],
-      "done": [],
-      "files": [],
-      "sub": "문서·공문",
-      "shots": []
-    },
-    {
-      "id": "k-seoul",
-      "name": "서울시 재원 회계관리",
-      "cat": "회계",
-      "sub": "",
-      "type": "keep",
-      "owner": "김O원",
-      "counterpart": "",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "서울시 보조금 재원 입출 업무 및 회계관리.",
-      "status": "진행중",
-      "prio": 5,
-      "final": true,
-      "systems": [],
-      "steps": [],
-      "files": [],
-      "shots": [],
-      "assets": [],
-      "traps": [
-        "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
-      ],
-      "next": [],
-      "log": [],
-      "done": []
-    },
-    {
-      "id": "k-gubi",
-      "name": "구비 재원 회계관리",
-      "cat": "회계",
-      "sub": "",
-      "type": "keep",
-      "owner": "김O원",
-      "counterpart": "",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "구비(구 보조금) 재원 입출 업무 및 회계관리.",
-      "status": "진행중",
-      "prio": 5,
-      "final": true,
-      "systems": [],
-      "steps": [],
-      "files": [],
-      "shots": [],
-      "assets": [],
-      "traps": [
-        "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
-      ],
-      "next": [],
-      "log": [],
-      "done": []
-    },
-    {
-      "id": "k-yesugeum",
-      "name": "예수금 회계관리",
-      "cat": "회계",
-      "sub": "",
-      "type": "keep",
-      "owner": "김O원",
-      "counterpart": "",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "예수금 계정 관리 — 원천징수분 등 예수·지급 대사.",
-      "status": "진행중",
-      "prio": 5,
-      "final": true,
-      "systems": [],
-      "steps": [],
-      "files": [],
-      "shots": [],
-      "assets": [],
-      "traps": [
-        "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
-      ],
-      "next": [],
-      "log": [],
-      "done": []
-    },
-    {
-      "id": "k-jayul",
-      "name": "자율재원 회계관리",
-      "cat": "회계",
-      "sub": "",
-      "type": "keep",
-      "owner": "김O원",
-      "counterpart": "",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "자율재원 입출 업무 및 회계관리.",
-      "status": "진행중",
-      "prio": 5,
-      "final": true,
-      "systems": [],
-      "steps": [],
-      "files": [],
-      "shots": [],
-      "assets": [],
-      "traps": [
-        "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
-      ],
-      "next": [],
-      "log": [],
-      "done": []
-    },
-    {
-      "id": "x-jutaek3",
-      "name": "주택 3개소 회계관리 (공공요금 제외)",
-      "cat": "회계",
-      "sub": "",
-      "type": "other",
-      "owner": "최O연",
-      "counterpart": "최O연",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "자립생활주택 가형·다형1·다형2 입출 업무 및 회계관리. 공공요금은 제외.",
-      "status": "미착수",
-      "prio": 5,
-      "final": true,
-      "systems": [],
-      "steps": [],
-      "files": [],
-      "shots": [],
-      "assets": [],
-      "traps": [],
-      "next": [],
-      "log": [],
-      "done": []
-    },
-    {
-      "id": "x-toejik",
-      "name": "퇴직금 · 기타소득 · 퇴사자 정산",
-      "cat": "회계",
-      "sub": "",
-      "type": "other",
-      "owner": "최O연",
-      "counterpart": "최O연",
-      "cycle": "수시",
-      "deadline": "",
-      "desc": "퇴직금, 기타소득 지급·신고, 퇴사자 정산.",
-      "status": "미착수",
-      "prio": "1,2",
-      "final": true,
-      "systems": [],
-      "steps": [],
-      "files": [],
-      "shots": [],
-      "assets": [],
-      "traps": [],
-      "next": [],
-      "log": [],
-      "done": []
-    }
-  ],
-  "people": [
-    {
-      "name": "이O수",
-      "dept": "구로IL센터",
-      "team": "",
-      "rank": "대표",
-      "role": "센터총괄",
-      "ratio": "활동지원사업 100%",
-      "note": "",
-      "duties": [
-        "대외업무 등",
-        "업무 조정 및 배치",
-        "회계 최종 결재권자",
-        "조직 운영 총괄"
-      ]
-    },
-    {
-      "name": "이O희",
-      "dept": "사무국",
-      "team": "",
-      "rank": "소장",
-      "role": "센터총괄",
-      "ratio": "중증장애인센터지원사업90% 활동지원사업10%",
-      "note": "",
-      "duties": [
-        "대외업무 등",
-        "장애인복지사업 총괄",
-        "사업계획 수립",
-        "이용자 상담관리 총괄",
-        "동료상담 총괄"
-      ]
-    },
-    {
-      "name": "신O철",
-      "dept": "사무국",
-      "team": "",
-      "rank": "사무국장",
-      "role": "사무국 총괄",
-      "ratio": "중증장애인센터지원사업 10% 활동지원사업 90%",
-      "note": "",
-      "duties": [
-        "활동지원사업 업무 관리",
-        "재규정 관리",
-        "행정 회계 관리",
-        "예산 결산 관리"
-      ]
-    },
-    {
-      "name": "이O민",
-      "dept": "사회서비스실",
-      "team": "",
-      "rank": "실장",
-      "role": "PAS 총괄, 이용자관리",
-      "ratio": "활동지원사업 100%",
-      "note": "",
-      "duties": [
-        "PAS 사업계획서(예산) 수립",
-        "활동지원 가산수당 지급내역 관리",
-        "활동지원 단기정산",
-        "이용인 종결보고서 작성",
-        "대상자 등급/본인부담금 변경 확인 및 안내",
-        "신규 이용자 관리",
-        "예외지급청구",
-        "PAS 총괄 결과보고서",
-        "활동지원사 복리후생",
-        "활동지원사 보수교육",
-        "월 사례회의",
-        "이용자/활동지원사 관리(상담 및 고충처리 업무)",
-        "모니터링",
-        "매칭업무",
-        "구로구청/국민건강보험/국민연금공단 관련 업무",
-        "PAS 평가 업무"
-      ]
-    },
-    {
-      "name": "박O미",
-      "dept": "사회서비스실",
-      "team": "PAS팀",
-      "rank": "팀장",
-      "role": "매칭업무, 활동지원사 단합사업 총괄",
-      "ratio": "활동지원사업 100%",
-      "note": "",
-      "duties": [
-        "바우처 미생성자 관리",
-        "활동지원인력 파견(대기자 관리/매칭업무)",
-        "다과 구입",
-        "활동지원 복지사업 총괄",
-        "활동지원 복지사업(신년발표회)",
-        "활동지원사 실습",
-        "활동지원 매칭 및 대기자 관리",
-        "예외지급청구",
-        "월 사례회의",
-        "이용자/활동지원사 관리(상담 및 고충처리 업무)",
-        "모니터링",
-        "구로구청/국민건강보험/국민연금공단 관련 업무",
-        "PAS 평가 업무"
-      ]
-    },
-    {
-      "name": "권O지",
-      "dept": "사회서비스실",
-      "team": "PAS팀",
-      "rank": "사회복지사",
-      "role": "활동지원사 관리",
-      "ratio": "활동지원사업 100%",
-      "note": "",
-      "duties": [
-        "활동지원사 총괄 관리(퇴직연금/사직서/휴직원/복직원)",
-        "활동지원사 입퇴사 관리",
-        "신규 활동지원사 관리",
-        "제공인력 정보 업데이트(전자바우처)",
-        "활동지원 복지사업(소모임)",
-        "이상결제 지급보류 관리",
-        "가족급여 모니터링",
-        "예외지급청구",
-        "월 사례회의",
-        "이용자/활동지원사 관리(상담 및 고충처리 업무)",
-        "모니터링",
-        "매칭업무"
-      ]
-    },
-    {
-      "name": "정O윤",
-      "dept": "사회서비스실",
-      "team": "PAS팀",
-      "rank": "사회복지사",
-      "role": "단말기관리, 소급결제 관리",
-      "ratio": "활동지원사업 100%",
-      "note": "",
-      "duties": [
-        "소급결제 총괄현황 관리",
-        "활동지원 복지사업(나들이)",
-        "활동지원 복지사업(활동지원인력관리)",
-        "단말기 관리",
-        "정보문자발송",
-        "전담인력 직무교육",
-        "기존 활동지원인력 결격사유(장애인학대)",
-        "예외지급청구",
-        "월 사례회의",
-        "이용자/활동지원사 관리(상담 및 고충처리 업무)",
-        "모니터링",
-        "매칭업무"
-      ]
-    },
-    {
-      "name": "김O진",
-      "dept": "사회서비스실",
-      "team": "PAS팀",
-      "rank": "사회복지사",
-      "role": "모니터링, 이용자 교육",
-      "ratio": "활동지원사업 100%",
-      "note": "",
-      "duties": [
-        "과오결제반납현황 관리",
-        "대상자 SMS 수신번호 관리",
-        "이용자 교육",
-        "신규 활동지원인력 결격사유 조회",
-        "직장인 건강검진",
-        "예외지급청구",
-        "월 사례회의",
-        "이용자/활동지원사 관리(상담 및 고충처리 업무)",
-        "모니터링(결과보고서)",
-        "매칭업무"
-      ]
-    },
-    {
-      "name": "김O리",
-      "dept": "사회서비스실",
-      "team": "PAS팀",
-      "rank": "사회복지사",
-      "role": "급여일정표 관리",
-      "ratio": "활동지원사업 100%",
-      "note": "",
-      "duties": [
-        "신규이용자 초기 모니터링",
-        "급여일정표 관리",
-        "활동지원 복지사업(나들이)",
-        "월 이용자/활동지원사 상담일지",
-        "기존 활동지원인력 결격사유(정신질환)",
-        "예외지급청구",
-        "월 사례회의",
-        "이용자/활동지원사 관리(상담 및 고충처리 업무)",
-        "모니터링(결과보고서)",
-        "매칭업무"
-      ]
-    },
-    {
-      "name": "노O숙",
-      "dept": "사무행정실",
-      "team": "",
-      "rank": "사회복지사",
-      "role": "활동지원사업 행정",
-      "ratio": "활동지원사업 100%",
-      "note": "",
-      "duties": [
-        "활동지원사업 입출 업무 및 회계관리",
-        "활동지원사 인사 관리",
-        "사무국, 활동지원사 사회보험 신고",
-        "사무국 직무교육 담당",
-        "휴가 및 근태 관리",
-        "활동보조인 급여 관리",
-        "세무신고",
-        "운영위원회 관련 업무 담당",
-        "예·결산 작성",
-        "배상책임보험 업무",
-        "활동지원팀 업무지원",
-        "사업체노동력조사(고용노동부/매월) 담당"
-      ]
-    },
-    {
-      "name": "최O연",
-      "dept": "사무행정실",
-      "team": "",
-      "rank": "사회복지사",
-      "role": "자립생활주택사업 행정",
-      "ratio": "활동지원사업 100%",
-      "note": "",
-      "duties": [
-        "주택, 퇴직금 입출업무 및 회계관리",
-        "퇴직연금(활동지원사,사무국)",
-        "자조모임지원 사업 인력관리",
-        "활동지원사업 기관 홍보 보조",
-        "이용자 및 활동지원사 모집 보조",
-        "활동지원사 보수교육 및 복지사업(보조)",
-        "후원 및 회계관리",
-        "활동지원팀 업무지원",
-        "차량 관리 담당",
-        "홈페이지 관리",
-        "채용관리"
-      ]
-    },
-    {
-      "name": "김O원",
-      "dept": "사무행정실",
-      "team": "",
-      "rank": "사회복지사",
-      "role": "장애인자립생활센터 행정",
-      "ratio": "중증장애인센터지원 100%",
-      "note": "",
-      "duties": [
-        "중증장애인자립생활센터사업,거주시설연계사업, 민간단체보조금 입출 업무 및 회계관리",
-        "민간단체보조금, 시설운영 입출 업무 및 회계관리",
-        "물품관리담당",
-        "운영위원회 관련 업무 담당",
-        "예·결산 작성",
-        "사무국 처우개선비 담당",
-        "처우개선비 입출업무 및 회계관리",
-        "증명서 발급",
-        "복지기금 사업"
-      ]
-    },
-    {
-      "name": "이O은",
-      "dept": "개별지원팀",
-      "team": "",
-      "rank": "팀장",
-      "role": "",
-      "ratio": "중증장애인센터지원사업 79% 후원 21%",
-      "note": "",
-      "duties": [
-        "동료상담 총괄",
-        "중증장애인센터지원사업 담당",
-        "복지일자리사업 총괄"
-      ]
-    },
-    {
-      "name": "김O서",
-      "dept": "지역사업팀",
-      "team": "",
-      "rank": "팀장",
-      "role": "장애인자립생활센터 지원사업담당",
-      "ratio": "중증장애인센터지원 100%",
-      "note": "",
-      "duties": [
-        "중증장애인센터지원사업 담당",
-        "개별자립지원 사업 담당",
-        "지역사회서비스 담당",
-        "복지일자리사업 담당"
-      ]
-    },
-    {
-      "name": "(공석)",
-      "dept": "지역사업팀",
-      "team": "",
-      "rank": "사회복지사",
-      "role": "",
-      "ratio": "중증장애인센터지원 100%",
-      "note": "*업무인계: 이O은, 김O서",
-      "duties": [
-        "중증장애인센터지원사업 담당",
-        "개별자립지원 사업 담당",
-        "지역사회서비스 담당"
-      ]
-    },
-    {
-      "name": "주O원",
-      "dept": "지역사업팀",
-      "team": "",
-      "rank": "사회복지사",
-      "role": "장애인자립생활센터 지원사업담당",
-      "ratio": "중증장애인센터지원 100%",
-      "note": "",
-      "duties": [
-        "중증장애인센터지원사업 담당",
-        "동료상담 담당"
-      ]
-    },
-    {
-      "name": "(공석)",
-      "dept": "지역사업팀",
-      "team": "",
-      "rank": "사회복지사",
-      "role": "IL사업팀 총괄",
-      "ratio": "활동지원사업 100%",
-      "note": "*업무인계: 이O민, 이O은, 김O서",
-      "duties": [
-        "활동지원사업 복지사업담당",
-        "이용자/활동지원사 관리(상담 및 고충처리 업무)",
-        "PAS 평가 업무",
-        "중증장애인센터지원사업 담당"
-      ]
-    },
-    {
-      "name": "이O원",
-      "dept": "개별지원팀",
-      "team": "",
-      "rank": "사회복지사",
-      "role": "자립생활주택(가형) 사업담당",
-      "ratio": "주택사업 100%",
-      "note": "*업무인계: 이O은, 유O정, 홍O서",
-      "duties": [
-        "자립생활주택 가형 개별자립지원계획 수립",
-        "자립생활주택 가형 입주자 일상 생활지원 및 관리",
-        "자립생활주택 가형 입주자 상담 및 모니터링",
-        "자립생활주택 가형 입주자 필요 자원 정보 제공 및 연계",
-        "퇴거자 지원 및 모니터링",
-        "기타 행정 업무(업무보고, 실적관리, 정산보고 등)"
-      ]
-    },
-    {
-      "name": "유O정",
-      "dept": "개별지원팀",
-      "team": "",
-      "rank": "사회복지사",
-      "role": "자립생활주택(다형1) 사업담당",
-      "ratio": "주택사업 100%",
-      "note": "",
-      "duties": [
-        "자립생활주택 다형1 개별자립지원계획 수립",
-        "자립생활주택 다형1 입주자 일상 생활지원 및 관리",
-        "자립생활주택 다형1 입주자 상담 및 모니터링",
-        "자립생활주택 다형1 입주자 필요 자원 정보 제공 및 연계",
-        "퇴거자 지원 및 모니터링",
-        "기타 행정 업무(업무보고, 실적관리, 정산보고 등)"
-      ]
-    },
-    {
-      "name": "홍O서",
-      "dept": "개별지원팀",
-      "team": "",
-      "rank": "사회복지사",
-      "role": "개별지원팀 총괄",
-      "ratio": "주택사업 100%",
-      "note": "",
-      "duties": [
-        "자립생활주택 다형2 개별자립지원계획 수립",
-        "자립생활주택 다형2 입주자 일상 생활지원 및 관리",
-        "자립생활주택 다형2 입주자 상담 및 모니터링",
-        "자립생활주택 다형2 입주자 필요 자원 정보 제공 및 연계",
-        "퇴거자 지원 및 모니터링",
-        "기타 행정 업무(업무보고, 실적관리, 정산보고 등)"
-      ]
-    }
-  ],
-  "org": [
-    "구로IL센터",
-    "사무국",
-    "사회서비스실",
-    "사무행정실",
-    "개별지원팀",
-    "지역사업팀"
-  ],
-  "events": [
-    {
-      "id": "e-singo-2",
-      "title": "기타소득 지급",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 5일",
-      "system": "보탬E, 인터넷뱅킹, 진우",
-      "owner": "최O연",
-      "prev": "최O연",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-3",
-      "title": "복지일자리 급여 지급",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 5일",
-      "system": "E나라",
-      "owner": "김O원",
-      "prev": "최O연",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-4",
-      "title": "활동지원사 급여 지급",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 10일",
-      "system": "진우급여시스템",
-      "owner": "노O숙",
-      "prev": "노O숙",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-5",
-      "title": "사무국직원 급여 지급",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 25일",
-      "system": "보탬E",
-      "owner": "조O민",
-      "prev": "조O민",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-6",
-      "title": "원천세, 지방소득세 신고",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 10일까지",
-      "system": "홈텍스",
-      "owner": "노O숙",
-      "prev": "노O숙",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-7",
-      "title": "기타소득 및 일용근로소득 신고",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 31일까지",
-      "system": "홈텍스",
-      "owner": "최O연, 노O숙",
-      "prev": "최O연, 노O숙",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-8",
-      "title": "퇴직연금 부담금 이체",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 14일",
-      "system": "기업은행 인터넷뱅킹",
-      "owner": "최O연",
-      "prev": "최O연",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-9",
-      "title": "신규입사자 및 퇴사자 사회보험 신고",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 14일까지",
-      "system": "고용산재토탈서비스",
-      "owner": "노O숙",
-      "prev": "노O숙",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-10",
-      "title": "퇴직연금 지급 신청",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 16일",
-      "system": "기업은행 인터넷뱅킹",
-      "owner": "최O연",
-      "prev": "최O연",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-11",
-      "title": "활동지원사 입사자 등록",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 5일까지",
-      "system": "진우시스템",
-      "owner": "노O숙",
-      "prev": "노O숙",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-12",
-      "title": "사업체노동력조사",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 12일까지",
-      "system": "고용노동부",
-      "owner": "노O숙",
-      "prev": "노O숙",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-13",
-      "title": "퇴사자정산",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 20일",
-      "system": "",
-      "owner": "최O연",
-      "prev": "최O연",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-14",
-      "title": "사회보험료정산",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "5월중",
-      "system": "",
-      "owner": "공통",
-      "prev": "공통",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-15",
-      "title": "근로소득 간이지급명세서 제출",
-      "cat": "신고·보고",
-      "detail": "1월~6월 상반기 제출",
-      "due": "7월 31일",
-      "system": "홈텍스",
-      "owner": "노O숙",
-      "prev": "노O숙",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-16",
-      "title": "근로소득 간이지급명세서 제출",
-      "cat": "신고·보고",
-      "detail": "7월~12월 하반기 제출",
-      "due": "1월 31일",
-      "system": "홈텍스",
-      "owner": "노O숙",
-      "prev": "노O숙",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-17",
-      "title": "장애인고용부담금 및 고용현황 신고",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "1월 31일",
-      "system": "한국장애인고용공단 E신고",
-      "owner": "공통",
-      "prev": "공통",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-18",
-      "title": "기타소득 지급명세서 신고",
-      "cat": "신고·보고",
-      "detail": "전년도 지급분 전체 신고",
-      "due": "2월 말일까지",
-      "system": "홈텍스",
-      "owner": "최O연",
-      "prev": "최O연",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-19",
-      "title": "보수총액신고",
-      "cat": "신고·보고",
-      "detail": "고용산재",
-      "due": "3월 14일까지",
-      "system": "고용산재토탈서비스",
-      "owner": "공통",
-      "prev": "공통",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-20",
-      "title": "후원금 결과 보고",
-      "cat": "신고·보고",
-      "detail": "지자체 제출 후 홈페이지 업로드 20일 이상 공고",
-      "due": "3월 31일까지",
-      "system": "",
-      "owner": "김O원",
-      "prev": "최O연",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-21",
-      "title": "결산 보고",
-      "cat": "신고·보고",
-      "detail": "지자체 제출 후 홈페이지 업로드 20일 이상 공고",
-      "due": "3월 31일까지",
-      "system": "",
-      "owner": "공통",
-      "prev": "공통",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-22",
-      "title": "예산 보고",
-      "cat": "신고·보고",
-      "detail": "지자체 제출 후 홈페이지 업로드 20일 이상 공고",
-      "due": "회기년도 시작 5일 전 제출 (12월 26일)",
-      "system": "",
-      "owner": "공통",
-      "prev": "공통",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-23",
-      "title": "연말정산",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "3월 10일까지",
-      "system": "홈텍스",
-      "owner": "공통",
-      "prev": "공통",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-24",
-      "title": "재물조사",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "연 1회",
-      "system": "",
-      "owner": "조O민",
-      "prev": "조O민",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-singo-25",
-      "title": "근무평정",
-      "cat": "신고·보고",
-      "detail": "수습직원은 수습평가로 대체하고, 나머지 인원 진행",
-      "due": "연 1회",
-      "system": "",
-      "owner": "정O",
-      "prev": "정O",
-      "fund": "",
-      "note": "",
-      "source": "신고 및 보고 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-2",
-      "title": "복지시설 종합안전배상공제 · 사무실",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "4월 15일",
-      "system": "",
-      "owner": "노O숙",
-      "prev": "노O숙",
-      "fund": "활동지원사업",
-      "note": "한국사회복지공제회",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-3",
-      "title": "단체상해공제 · 사무국직원",
-      "cat": "보험·구독 만기",
-      "detail": "현재 정부지원금 소진으로 일반으로 가입 신규 가입시 정부지원금 소진 전이면 정부지원금단체상해공제 상품으로 가입",
-      "due": "11월 9일",
-      "system": "",
-      "owner": "조O민",
-      "prev": "조O민",
-      "fund": "운영, 활동지원사업",
-      "note": "한국사회복지공제회",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-4",
-      "title": "신원보증보험 · 자립생활주택 코디",
-      "cat": "보험·구독 만기",
-      "detail": "최O나(공석)",
-      "due": "6월 23일",
-      "system": "",
-      "owner": "담당코디",
-      "prev": "담당코디",
-      "fund": "주택 가형",
-      "note": "SGI서울보증, 최O나",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-5",
-      "title": "신원보증보험 · 자립생활주택 코디",
-      "cat": "보험·구독 만기",
-      "detail": "유O정",
-      "due": "3월 5일",
-      "system": "",
-      "owner": "담당코디",
-      "prev": "담당코디",
-      "fund": "주택 다형1",
-      "note": "SGI서울보증",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-6",
-      "title": "신원보증보험 · 자립생활주택 코디",
-      "cat": "보험·구독 만기",
-      "detail": "홍O서",
-      "due": "9월 22일",
-      "system": "",
-      "owner": "담당코디",
-      "prev": "담당코디",
-      "fund": "주택 다형2",
-      "note": "SGI서울보증",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-7",
-      "title": "신원보증보험 · 사무국 회계담당직원 및 간부",
-      "cat": "보험·구독 만기",
-      "detail": "즉위식으로 가입, 가입시 즉위 확인할것",
-      "due": "11월 28일",
-      "system": "",
-      "owner": "최O연",
-      "prev": "최O연",
-      "fund": "활동지원사업",
-      "note": "SGI서울보증",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-8",
-      "title": "배상책임보험 · 활동지원사",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "12월(차기년 시작 전)",
-      "system": "",
-      "owner": "노O숙",
-      "prev": "노O숙",
-      "fund": "활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-9",
-      "title": "자동차보험 · 레이",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "6월 18일",
-      "system": "",
-      "owner": "김O원",
-      "prev": "조O민",
-      "fund": "운영",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-10",
-      "title": "자동차보험 · 스타렉스",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "10월 24일",
-      "system": "",
-      "owner": "김O원",
-      "prev": "조O민",
-      "fund": "운영",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-11",
-      "title": "화재보험 · 사무실(8층)",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "12월 30일",
-      "system": "",
-      "owner": "최O연",
-      "prev": "최O연",
-      "fund": "활동지원사업",
-      "note": "메리츠화재(TEL [연락처 비공개])",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-12",
-      "title": "화재보험 · 사무실(5층)",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "7월 22일",
-      "system": "",
-      "owner": "최O연",
-      "prev": "최O연",
-      "fund": "활동지원사업",
-      "note": "메리츠화재(TEL [연락처 비공개])",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-13",
-      "title": "화재보험 · 자립생활주택 가형(온수동)",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "12월 19일",
-      "system": "",
-      "owner": "담당코디",
-      "prev": "담당코디",
-      "fund": "운영(주택 계좌로 자부담처리)",
-      "note": "메리츠화재(TEL [연락처 비공개])",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-14",
-      "title": "화재보험 · 자립생활주택 다형1(시흥동)",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "7월 3일",
-      "system": "",
-      "owner": "담당코디",
-      "prev": "담당코디",
-      "fund": "운영(주택 계좌로 자부담처리)",
-      "note": "메리츠화재(TEL [연락처 비공개])",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-15",
-      "title": "화재보험 · 자립생활주택 다형2(개봉동)",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "9월 12일",
-      "system": "",
-      "owner": "담당코디",
-      "prev": "담당코디",
-      "fund": "운영(주택 계좌로 자부담처리)",
-      "note": "메리츠화재(TEL [연락처 비공개])",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-16",
-      "title": "노트북 케어플러스",
-      "cat": "보험·구독 만기",
-      "detail": "종료 이후에는 가입 불가능",
-      "due": "2024. 4월 종료",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-17",
-      "title": "태블릿",
-      "cat": "보험·구독 만기",
-      "detail": "종료 이후에는 가입 불가능",
-      "due": "2024. 8월",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-18",
-      "title": "웹모아 홈페이지 · 센터 홈페이지",
-      "cat": "보험·구독 만기",
-      "detail": "도메인 서비스 연장",
-      "due": "11월 28일",
-      "system": "",
-      "owner": "김O원",
-      "prev": "김O원",
-      "fund": "활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-19",
-      "title": "진우 연장 계약",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "3월 11일",
-      "system": "",
-      "owner": "조O민",
-      "prev": "조O민",
-      "fund": "IL센터지원사업, 활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-20",
-      "title": "DAUM 메일 사용료",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "5월 7일",
-      "system": "",
-      "owner": "노O숙",
-      "prev": "노O숙",
-      "fund": "활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-21",
-      "title": "법인 교통카드 연 관리비",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "7월 3일",
-      "system": "",
-      "owner": "김O원",
-      "prev": "조O민",
-      "fund": "활동지원사업, 운영",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-22",
-      "title": "비즈폼",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "8월 9일",
-      "system": "",
-      "owner": "최O연",
-      "prev": "최O연",
-      "fund": "활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-23",
-      "title": "미리캔버스",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "8월 12일",
-      "system": "",
-      "owner": "최O연",
-      "prev": "최O연",
-      "fund": "활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-24",
-      "title": "chat GPT",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "2024. 8. 2 ~ 2025. 8. 1",
-      "system": "",
-      "owner": "신입",
-      "prev": "신입",
-      "fund": "운영, 활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-25",
-      "title": "Adobe",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "2025년 6월",
-      "system": "",
-      "owner": "신입",
-      "prev": "신입",
-      "fund": "활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-26",
-      "title": "Claude",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "2025년 1월 ~ 2025년 12월",
-      "system": "",
-      "owner": "신입",
-      "prev": "신입",
-      "fund": "활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-boheom-27",
-      "title": "인증서관리",
-      "cat": "보험·구독 만기",
-      "detail": "",
-      "due": "4월 4일",
-      "system": "",
-      "owner": "김O원",
-      "prev": "조O민",
-      "fund": "활동지원사업",
-      "note": "",
-      "source": "보험 및 이용권 시트",
-      "status": "예정"
-    },
-    {
-      "id": "e-extra-0",
-      "title": "구로구청 지도점검 (장애인활동지원)",
-      "cat": "지도점검",
-      "detail": "",
-      "due": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "연 1회 통상. 수검 시점·범위 구청 공문으로 통보. 사전 준비자료 목록 확보 필요",
-      "source": "직접 입력 — 원본 엑셀에 없음",
-      "status": "확인필요"
-    },
-    {
-      "id": "e-extra-1",
-      "title": "구로구청 지도점검 (중증장애인자립생활센터)",
-      "cat": "지도점검",
-      "detail": "",
-      "due": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "보조금 집행·증빙 중심. 예·결산 및 정산보고 자료와 연동",
-      "source": "직접 입력 — 원본 엑셀에 없음",
-      "status": "확인필요"
-    },
-    {
-      "id": "e-extra-2",
-      "title": "장애인활동지원기관 평가",
-      "cat": "평가",
-      "detail": "",
-      "due": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "PAS 평가 업무 — 사회서비스실 전원 참여. 주기·차수 확인 필요",
-      "source": "직접 입력 — 원본 엑셀에 없음",
-      "status": "확인필요"
-    },
-    {
-      "id": "e-extra-3",
-      "title": "자립생활센터 운영 평가",
-      "cat": "평가",
-      "detail": "",
-      "due": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "시·구 주관 여부 및 주기 확인 필요",
-      "source": "직접 입력 — 원본 엑셀에 없음",
-      "status": "확인필요"
-    },
-    {
-      "id": "e-extra-4",
-      "title": "보조금 정산검사 · 외부 회계감사",
-      "cat": "점검",
-      "detail": "",
-      "due": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "결산(3월 31일)과 연동. 감사 지적사항 이월분 확인",
-      "source": "직접 입력 — 원본 엑셀에 없음",
-      "status": "확인필요"
-    },
-    {
-      "id": "e-extra-5",
-      "title": "재물조사",
-      "cat": "내부점검",
-      "detail": "",
-      "due": "연 1회",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "비품관리 담당이 수행",
-      "source": "직접 입력 — 원본 엑셀에 없음",
-      "status": "예정"
-    },
-    {
-      "id": "e-extra-6",
-      "title": "근무평정",
-      "cat": "내부점검",
-      "detail": "",
-      "due": "연 1회",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "수습직원은 수습평가로 대체",
-      "source": "직접 입력 — 원본 엑셀에 없음",
-      "status": "예정"
-    },
-    {
-      "id": "e-extra-7",
-      "title": "운영위원회",
-      "cat": "회의",
-      "detail": "",
-      "due": "분기별 1회",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "자료집 제작·안건정리·회의록",
-      "source": "직접 입력 — 원본 엑셀에 없음",
-      "status": "예정"
-    },
-    {
-      "id": "e-extra-8",
-      "title": "총회",
-      "cat": "회의",
-      "detail": "",
-      "due": "연 1회 이상",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "자료집 제작·안건정리·회의록",
-      "source": "직접 입력 — 원본 엑셀에 없음",
-      "status": "예정"
-    },
-    {
-      "id": "e-extra-9",
-      "title": "사업체노동력조사 (고용노동부)",
-      "cat": "신고·보고",
-      "detail": "",
-      "due": "매월 12일까지",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "매월 12일까지 제출",
-      "source": "직접 입력 — 원본 엑셀에 없음",
-      "status": "예정"
-    },
-    {
-      "id": "e-oc-q",
-      "title": "운영위원회 (분기별)",
-      "cat": "회의",
-      "detail": "",
-      "due": "분기별 1회 (3·6·9·12월)",
-      "rule": {
-        "kind": "months",
-        "months": [
-          3,
-          6,
-          9,
-          12
-        ],
-        "d": 0
-      },
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "김O원",
-      "prev": "",
-      "fund": "",
-      "note": "자료집 제작 · 안건정리 · 회의록. 개최 2주 전 안건 취합 시작",
-      "source": "직접 입력",
-      "status": "예정"
-    },
-    {
-      "id": "e-pas-oc",
-      "title": "활동지원사업 운영위원회",
-      "cat": "회의",
-      "detail": "",
-      "due": "반기 1회 (6·12월)",
-      "rule": {
-        "kind": "months",
-        "months": [
-          6,
-          12
-        ],
-        "d": 0
-      },
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "담당 공무원·활동지원사 대표·수급자 대표 필수 참석. 개최 주기 확인 필요",
-      "source": "직접 입력",
-      "status": "예정"
-    },
-    {
-      "id": "e-chonghoe",
-      "title": "정기총회",
-      "cat": "회의",
-      "detail": "",
-      "due": "2월 중 (연 1회 이상)",
-      "rule": {
-        "kind": "yearly",
-        "m": 2,
-        "d": 0
-      },
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "김O원",
-      "prev": "",
-      "fund": "",
-      "note": "자료집 제작 · 안건정리 · 회의록. 결산(3월 31일) 전에 개최",
-      "source": "직접 입력",
-      "status": "예정"
-    },
-    {
-      "id": "e-nosa",
-      "title": "노사협의회",
-      "cat": "회의",
-      "detail": "",
-      "due": "분기별 1회",
-      "rule": {
-        "kind": "months",
-        "months": [
-          3,
-          6,
-          9,
-          12
-        ],
-        "d": 0
-      },
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "근로자·사용자 각 3명. 고충처리위원회 겸함",
-      "source": "직접 입력",
-      "status": "예정"
-    },
-    {
-      "id": "e-term-daepyo",
-      "title": "대표·감사 임기 만료",
-      "cat": "임기",
-      "detail": "",
-      "due": "2026. 2. 28. / 2. 29.",
-      "rule": {
-        "kind": "yearly",
-        "m": 2,
-        "d": 28
-      },
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "김O원",
-      "prev": "",
-      "fund": "",
-      "note": "대표 이O수(3년) · 감사 김O수(2년) — 이미 만료. 연임·재선출 절차 확인 필요",
-      "source": "직접 입력",
-      "status": "예정",
-      "basis": "정관"
-    },
-    {
-      "id": "e-term-unyeong",
-      "title": "운영위원 임기 만료",
-      "cat": "임기",
-      "detail": "",
-      "due": "2026. 2. 28.",
-      "rule": {
-        "kind": "yearly",
-        "m": 2,
-        "d": 28
-      },
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "김O원",
-      "prev": "",
-      "fund": "",
-      "note": "임기 3년 만료 — 이미 도과. 재구성 필요 (대표 포함 7~11인)",
-      "source": "직접 입력",
-      "status": "예정",
-      "basis": "정관"
-    },
-    {
-      "id": "e-term-pas",
-      "title": "활동지원사업 운영위원 임기 만료",
-      "cat": "임기",
-      "detail": "",
-      "due": "2027. 2. 28.",
-      "rule": {
-        "kind": "yearly",
-        "m": 2,
-        "d": 28
-      },
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "임기 2년 · 연임 1회 가능",
-      "source": "직접 입력",
-      "status": "예정",
-      "basis": "장애인활동지원 사업 지침"
-    },
-    {
-      "id": "e-edu-inkwon",
-      "title": "인권교육",
-      "cat": "의무교육",
-      "detail": "",
-      "due": "연 1회",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "이수 기한·시수는 해당 연도 지침으로 확인",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "전 직원",
-      "basis": "장애인복지법",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-seong",
-      "title": "성희롱 예방교육",
-      "cat": "의무교육",
-      "detail": "",
-      "due": "연 1회",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "이수 기한·시수는 해당 연도 지침으로 확인",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "전 직원",
-      "basis": "양성평등기본법",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-seongpok",
-      "title": "성폭력·성매매 예방교육",
-      "cat": "의무교육",
-      "detail": "",
-      "due": "연 1회",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "이수 기한·시수는 해당 연도 지침으로 확인",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "전 직원",
-      "basis": "성폭력방지법 / 성매매방지법",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-gajeong",
-      "title": "가정폭력 예방교육",
-      "cat": "의무교육",
-      "detail": "",
-      "due": "연 1회",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "이수 기한·시수는 해당 연도 지침으로 확인",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "전 직원",
-      "basis": "가정폭력방지법",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-insik",
-      "title": "장애인식개선교육",
-      "cat": "의무교육",
-      "detail": "",
-      "due": "연 1회",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "이수 기한·시수는 해당 연도 지침으로 확인",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "전 직원",
-      "basis": "장애인고용촉진 및 직업재활법",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-privacy",
-      "title": "개인정보보호교육",
-      "cat": "의무교육",
-      "detail": "",
-      "due": "연 1회",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "이수 기한·시수는 해당 연도 지침으로 확인",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "전 직원",
-      "basis": "개인정보 보호법",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-hakdae",
-      "title": "장애인학대 신고의무자 교육",
-      "cat": "의무교육",
-      "detail": "",
-      "due": "연 1회",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "이수 기한·시수는 해당 연도 지침으로 확인",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "전 직원",
-      "basis": "장애인복지법",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-adong",
-      "title": "아동학대 신고의무자 교육",
-      "cat": "의무교육",
-      "detail": "",
-      "due": "연 1회",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "이수 기한·시수는 해당 연도 지침으로 확인",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "해당자",
-      "basis": "아동학대처벌법",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-gingeup",
-      "title": "긴급복지 신고의무자 교육",
-      "cat": "의무교육",
-      "detail": "",
-      "due": "연 1회",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "이수 기한·시수는 해당 연도 지침으로 확인",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "전 직원",
-      "basis": "긴급복지지원법",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-anjeon",
-      "title": "산업안전보건교육",
-      "cat": "의무교육",
-      "detail": "",
-      "due": "분기별",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "이수 기한·시수는 해당 연도 지침으로 확인",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "전 직원",
-      "basis": "산업안전보건법",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-toejik",
-      "title": "퇴직연금 교육",
-      "cat": "의무교육",
-      "detail": "",
-      "due": "연 1회",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "이수 기한·시수는 해당 연도 지침으로 확인",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "전 직원",
-      "basis": "근로자퇴직급여보장법",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-pas",
-      "title": "활동지원사 보수교육",
-      "cat": "교육",
-      "detail": "",
-      "due": "연 1회 이상",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "활동지원사 대상. 이수 현황 관리",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "활동지원사",
-      "basis": "장애인활동지원 사업 지침",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-jeondam",
-      "title": "전담인력 직무교육",
-      "cat": "교육",
-      "detail": "",
-      "due": "연 1회",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "PAS 전담인력 대상",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "PAS 전담인력",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-edu-jikwon",
-      "title": "사무국 직원교육",
-      "cat": "교육",
-      "detail": "",
-      "due": "수시",
-      "rule": null,
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "노O숙",
-      "prev": "",
-      "fund": "",
-      "note": "직원교육 관리 담당",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "사무국",
-      "completed": [],
-      "certPath": ""
-    },
-    {
-      "id": "e-geomjin",
-      "title": "직장인 건강검진",
-      "cat": "교육",
-      "detail": "",
-      "due": "연 1회 (11월까지)",
-      "rule": {
-        "kind": "yearly",
-        "m": 11,
-        "d": 0
-      },
-      "date": "",
-      "end": "",
-      "system": "",
-      "owner": "",
-      "prev": "",
-      "fund": "",
-      "note": "미수검 시 과태료. 대상자 명단 관리 필요",
-      "source": "직접 입력",
-      "status": "예정",
-      "target": "전 직원",
-      "completed": [],
-      "certPath": ""
-    }
-  ],
-  "docs": [
-    {
-      "id": "d-0",
-      "title": "정관",
-      "kind": "규정",
-      "scope": "법인 전체",
-      "note": "대표·감사·운영위원 임기와 구성 근거",
-      "path": "",
-      "checked": false
-    },
-    {
-      "id": "d-1",
-      "title": "취업규칙",
-      "kind": "규정",
-      "scope": "전 직원",
-      "note": "내규 관리 항목 — 총무 공통업무",
-      "path": "",
-      "checked": false
-    },
-    {
-      "id": "d-2",
-      "title": "인사위원회 운영규정",
-      "kind": "규정",
-      "scope": "인사",
-      "note": "인사위원 구성 근거 (대표·소장·사무국장·선임팀장)",
-      "path": "",
-      "checked": false
-    },
-    {
-      "id": "d-3",
-      "title": "노사협의회 운영규정",
-      "kind": "규정",
-      "scope": "노사",
-      "note": "근로자대표 3명 / 사용자대표 3명, 임기 3년",
-      "path": "",
-      "checked": false
-    },
-    {
-      "id": "d-4",
-      "title": "활동지원사업 운영규정",
-      "kind": "규정",
-      "scope": "활동지원",
-      "note": "민원처리위원회 구성 근거",
-      "path": "",
-      "checked": false
-    },
-    {
-      "id": "d-5",
-      "title": "장애인활동지원 사업 지침",
-      "kind": "지침",
-      "scope": "활동지원",
-      "note": "활동지원사업 운영위원 구성 요건 (담당 공무원·활동지원사 대표·수급자 대표 필수)",
-      "path": "",
-      "checked": false
-    },
-    {
-      "id": "d-6",
-      "title": "장애인활동지원 급여제공 지침",
-      "kind": "지침",
-      "scope": "활동지원",
-      "note": "고충처리위원회 구성 근거",
-      "path": "",
-      "checked": false
-    },
-    {
-      "id": "d-7",
-      "title": "사회복지법인·시설 재무회계 규칙",
-      "kind": "지침",
-      "scope": "회계",
-      "note": "예·결산, 후원금 관리, 정산 근거",
-      "path": "",
-      "checked": false
-    },
-    {
-      "id": "d-8",
-      "title": "보조금 교부·정산 지침 (구로구)",
-      "kind": "지침",
-      "scope": "회계",
-      "note": "민간단체보조금·시설운영 집행 기준",
-      "path": "",
-      "checked": false
-    },
-    {
-      "id": "d-9",
-      "title": "홈페이지 유지보수 계약서 (㈜웹모아)",
-      "kind": "계약",
-      "scope": "전산",
-      "note": "2018-08-24 제작계약. 제13조4항 개발완료 후 수정 유료, 제20조 제작계약 종료·현재는 연간 유지보수",
-      "path": "",
-      "checked": false
-    },
-    {
-      "id": "d-10",
-      "title": "업무 매뉴얼 — 장블랑제리 후원품 수령증",
-      "kind": "매뉴얼",
-      "scope": "후원",
-      "note": "클로드 스킬 jangblanc-donation-workflow 에 절차 고정",
-      "path": "",
-      "checked": false
-    },
-    {
-      "id": "d-11",
-      "title": "업무 매뉴얼 — 구로 당번표 웹앱",
-      "kind": "매뉴얼",
-      "scope": "총무",
-      "note": "배포 브랜치 main2 / localStorage 병합 주의",
-      "path": "https://kittycong.github.io/guro_dangbun/",
-      "checked": false
-    },
-    {
-      "id": "d-docsys",
-      "title": "문서생성 시스템 (출장·기안·수령증·회의록·휴가·운영위)",
-      "kind": "매뉴얼",
-      "scope": "사무국 공통",
-      "note": "출장신청서·복명서, 물품구매/고정거래 내부기안, 산출기초조사서, 후원물품 수령증, 인사회의록, 휴가신청, 운영위원회 안건, 장블랑제리 합본 생성. 작성 → 결재중 → 결재완료 상태 관리와 엑셀 다운로드·구글시트 전송 지원.",
-      "path": "https://chulchang-munseo.vercel.app/",
-      "checked": false
-    }
-  ],
-  "contacts": [
-    {
-      "id": "c-0",
-      "name": "센터 대표번호",
-      "cat": "내부",
-      "person": "사무국",
-      "tel": "(02)857-9501",
-      "email": "grcil@daum.net",
-      "note": "전송 (02)857-9502 · 주소 (08298) 서울특별시 구로구 가마산로27길 14, 8층(구로동)",
-      "task": "",
-      "emergency": true,
-      "fav": true
-    },
-    {
-      "id": "c-1",
-      "name": "건물 관리사무소",
-      "cat": "시설",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "정전·누수·엘리베이터·출입 통제. 번호 확인 필요",
-      "task": "",
-      "emergency": true,
-      "fav": false
-    },
-    {
-      "id": "c-119",
-      "name": "소방·구급",
-      "cat": "응급",
-      "person": "",
-      "tel": "119",
-      "email": "",
-      "note": "이용자·활동지원사 응급상황. 사고 발생 시 센터 보고 절차 함께 확인",
-      "task": "",
-      "emergency": true,
-      "fav": false
-    },
-    {
-      "id": "c-112",
-      "name": "경찰",
-      "cat": "응급",
-      "person": "",
-      "tel": "112",
-      "email": "",
-      "note": "범죄·안전 신고",
-      "task": "",
-      "emergency": true,
-      "fav": false
-    },
-    {
-      "id": "c-3",
-      "name": "㈜웹모아",
-      "cat": "유지보수",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "홈페이지 grcil.kr 호스팅·유지보수. 게시물 등록·수정은 WIMS 게시판으로 요청. 도메인·유지보수 연장 11월 28일",
-      "task": "o-homepage",
-      "emergency": true,
-      "fav": true
-    },
-    {
-      "id": "c-4",
-      "name": "진우정보시스템",
-      "cat": "유지보수",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "활동지원사 급여시스템(진우). 연장 계약 3월 11일",
-      "task": "",
-      "emergency": true,
-      "fav": true
-    },
-    {
-      "id": "c-5",
-      "name": "보탬e 헬프데스크",
-      "cat": "시스템",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "보조금 집행·정산 시스템. 사무국직원 급여지급·회계 처리에 사용",
-      "task": "i-geupyeo",
-      "emergency": false,
-      "fav": true
-    },
-    {
-      "id": "c-6",
-      "name": "홈택스",
-      "cat": "시스템",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "원천세·지방소득세(매월 10일), 기타소득 지급명세서(2월 말), 연말정산(3월 10일)",
-      "task": "",
-      "emergency": false,
-      "fav": true
-    },
-    {
-      "id": "c-7",
-      "name": "고용산재토탈서비스",
-      "cat": "시스템",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "사회보험 취득·상실 신고(매월 14일까지), 보수총액신고(3월 14일)",
-      "task": "i-saboheom-singo",
-      "emergency": false,
-      "fav": true
-    },
-    {
-      "id": "c-8",
-      "name": "공동인증서 발급기관",
-      "cat": "시스템",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "만기 4월 4일. 놓치면 보탬e·홈택스·인터넷뱅킹 전부 막힘",
-      "task": "i-injeungseo",
-      "emergency": true,
-      "fav": true
-    },
-    {
-      "id": "c-9",
-      "name": "구로구청 장애인복지과",
-      "cat": "관공서",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "보조금 교부·정산, 지도점검, 처우개선비, 장애인복지기금",
-      "task": "k-jungjeung-acc",
-      "emergency": true,
-      "fav": true
-    },
-    {
-      "id": "c-10",
-      "name": "국민건강보험공단",
-      "cat": "관공서",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "사회보험 관련",
-      "task": "",
-      "emergency": false,
-      "fav": false
-    },
-    {
-      "id": "c-11",
-      "name": "국민연금공단",
-      "cat": "관공서",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "사회보험 관련",
-      "task": "",
-      "emergency": false,
-      "fav": false
-    },
-    {
-      "id": "c-12",
-      "name": "한국장애인고용공단",
-      "cat": "관공서",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "장애인고용부담금·고용현황 신고 1월 31일 (E신고)",
-      "task": "c-singo",
-      "emergency": false,
-      "fav": false
-    },
-    {
-      "id": "c-13",
-      "name": "고용노동부",
-      "cat": "관공서",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "사업체노동력조사 매월 12일까지",
-      "task": "",
-      "emergency": false,
-      "fav": false
-    },
-    {
-      "id": "c-14",
-      "name": "기업은행",
-      "cat": "금융",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "퇴직연금 부담금 이체(매월 14일), 지급 신청(매월 16일), 인터넷뱅킹",
-      "task": "",
-      "emergency": false,
-      "fav": true
-    },
-    {
-      "id": "c-15",
-      "name": "한국사회복지공제회",
-      "cat": "보험",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "복지시설 종합안전배상공제(4월 15일), 단체상해공제(11월 9일)",
-      "task": "",
-      "emergency": false,
-      "fav": false
-    },
-    {
-      "id": "c-16",
-      "name": "SGI서울보증",
-      "cat": "보험",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "신원보증보험 — 자립생활주택 코디, 사무국 회계담당·간부(11월 28일)",
-      "task": "",
-      "emergency": false,
-      "fav": false
-    },
-    {
-      "id": "c-17",
-      "name": "메리츠화재",
-      "cat": "보험",
-      "person": "",
-      "tel": "[연락처 비공개]",
-      "email": "",
-      "note": "화재보험 — 사무실 8층(12/30)·5층(7/22), 자립생활주택 가형(12/19)·다형1(7/3)·다형2(9/12)",
-      "task": "",
-      "emergency": false,
-      "fav": true
-    },
-    {
-      "id": "c-18",
-      "name": "장블랑제리 (해피피플)",
-      "cat": "거래처",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "빵 후원. 매월 거래명세 검증 후 물품수령증 발급·날인",
-      "task": "k-bread",
-      "emergency": false,
-      "fav": true
-    },
-    {
-      "id": "c-19",
-      "name": "구로시민센터",
-      "cat": "거래처",
-      "person": "",
-      "tel": "",
-      "email": "",
-      "note": "후원 CMS 자동이체 신청 관리",
-      "task": "o-huwon-cms",
-      "emergency": false,
-      "fav": false
-    }
-  ],
-  "subcat": {
-    "총무": {
-      "문서·공문": [],
-      "규정·계약": [],
-      "회의체": [],
-      "비품·자산": [],
-      "전산·장비": [],
-      "차량": [],
-      "계정·카드": [],
-      "후원·상품권": [],
-      "직원지원": [],
-      "사업·공모": []
-    }
+  "me": "김O원",
+  "공개": "공개 배포본 — 성명 마스킹 · 연락처 삭제 · 캡처 미포함. 실명 원본은 내부 보관."
+ },
+ "tasks": [
+  {
+   "id": "k-bokjigigum-acc",
+   "name": "장애인복지기금 회계관리",
+   "cat": "회계",
+   "type": "keep",
+   "counterpart": "",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "복지기금 재원의 기안문서 작성·정리, 일반지출 처리, 회계관리 전반.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "prio": 5,
+   "owner": "김O원",
+   "final": true,
+   "shots": []
   },
-  "committees": [
+  {
+   "id": "k-cheowoo-acc",
+   "name": "처우개선비 회계관리",
+   "cat": "회계",
+   "type": "keep",
+   "counterpart": "",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "사무국 처우개선비 담당. 처우개선비 재원 기안문서 정리·일반지출·입출 및 회계관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "owner": "김O원",
+   "final": true,
+   "shots": []
+  },
+  {
+   "id": "k-jungjeung-acc",
+   "name": "중증장애인센터지원 · 민간단체보조금 · 시설운영 회계관리",
+   "cat": "회계",
+   "type": "keep",
+   "counterpart": "조O민",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "중증장애인자립생활센터사업, 거주시설연계사업, 민간단체보조금, 시설운영 재원의 입출 업무 및 회계관리. 업무비율상 주력 업무(중증장애인센터지원 100%).",
+   "systems": [
+    "보탬E"
+   ],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "⚠ 최종 분장표에 별도 표기 없음 — 서울시·구비 재원과 중복인지 확인",
+    "'업무분담' 시트는 26년 담당=조O민, 10월=김O원으로 인수 처리. '2026.09.01.' 시트는 이미 김O원 담당으로 기재 — 실제로는 이미 수행 중이면 keep, 10월부터면 in 으로 바꿀 것"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "shots": []
+  },
+  {
+   "id": "k-yegyeolsan",
+   "name": "예·결산 작성",
+   "cat": "회계",
+   "type": "keep",
+   "counterpart": "",
+   "cycle": "연 2회",
+   "deadline": "결산 3월 31일까지 / 예산 회기년도 시작 5일 전(12월 26일)",
+   "desc": "담당 재원 예산서·결산서 작성. 지자체 제출 후 홈페이지에 20일 이상 공고 필요.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "홈페이지 공고 20일 이상 — 마감 역산해서 업로드 시점 잡을 것",
+    "'신고 및 보고' 시트상 결산·예산 보고는 '공통'"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "shots": []
+  },
+  {
+   "id": "k-insa-register",
+   "name": "사무국 직원 인사정보 등록",
+   "cat": "인사",
+   "type": "keep",
+   "counterpart": "",
+   "cycle": "발생시",
+   "deadline": "",
+   "desc": "사무국 직원 인사정보 등록·갱신.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "shots": []
+  },
+  {
+   "id": "k-jikin",
+   "name": "직인 및 인감 관리",
+   "cat": "총무",
+   "type": "keep",
+   "counterpart": "",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "센터 직인·인감 보관 및 날인 관리. 전담업무.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "문서·공문",
+   "shots": []
+  },
+  {
+   "id": "k-jeungmyeongseo",
+   "name": "증명서 발급",
+   "cat": "인사",
+   "type": "keep",
+   "counterpart": "",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "재직증명서·경력증명서 등 발급.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "'업무분담' 시트에는 '다같이', '2026.09.01.' 시트에는 김O원 담당 — 확정 필요"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "직원지원",
+   "shots": []
+  },
+  {
+   "id": "k-mulpum",
+   "name": "물품관리 담당",
+   "cat": "총무",
+   "type": "keep",
+   "counterpart": "",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "센터 물품 관리 담당. ('2026.09.01.' 업무분장표 기재)",
+   "systems": [
+    "문서생성 시스템"
+   ],
+   "steps": [],
+   "assets": [
+    "문서생성 시스템 [물품구매(내부기안)] — 내부기안 + 산출기초조사서 + 비교견적 3곳 · https://chulchang-munseo.vercel.app/"
+   ],
+   "traps": [
+    "인수 예정인 '비품관리'와 범위 중복 여부 확인 — 하나로 합칠지 결정"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "비품·자산",
+   "shots": []
+  },
+  {
+   "id": "k-unyeongwi",
+   "name": "운영위원회 관련 업무",
+   "cat": "총무",
+   "type": "keep",
+   "counterpart": "",
+   "cycle": "분기별 1회",
+   "deadline": "",
+   "desc": "운영위원회 자료집 제작, 회의 준비, 안건정리, 회의록 작성.",
+   "systems": [
+    "문서생성 시스템"
+   ],
+   "steps": [],
+   "assets": [
+    "문서생성 시스템 [운영위원회] — 운영위원회 안건·자료 생성 · https://chulchang-munseo.vercel.app/"
+   ],
+   "traps": [
+    "'업무분담' 시트는 '다같이', '2026.09.01.' 시트는 김O원 담당 — 확정 필요",
+    "운영위원 임기 2023.02.28~2026.02.28 이미 종료 — 재구성 여부 확인",
+    "활동지원사업 운영위원은 담당 공무원·활동지원사 대표·수급자 대표 필수 구성"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "회의체",
+   "shots": []
+  },
+  {
+   "id": "k-hyugesil",
+   "name": "휴게실 당번 관리",
+   "cat": "총무",
+   "type": "keep",
+   "counterpart": "",
+   "cycle": "매월 1회",
+   "deadline": "",
+   "desc": "휴게실 청소 당번표 편성·공지. 전담업무. 당번표는 웹앱으로 관리.",
+   "systems": [
+    "구로 당번표 웹앱"
+   ],
+   "steps": [
+    "danbun_data.json 수정 (employees / personnelChanges / scheduleAnchors)",
+    "SCHEDULE_VERSION 상수 갱신",
+    "되살아나면 안 되는 인원은 index.html CANCELLED_PERSONNEL 에 추가",
+    "로컬 정적서버로 검증 후 main2 브랜치 푸시"
+   ],
+   "assets": [
+    "C:\\Users\\user\\Desktop\\클로드 코워크\\guro_dangbun",
+    "https://kittycong.github.io/guro_dangbun/"
+   ],
+   "traps": [
+    "배포 브랜치가 main 아니라 main2",
+    "localStorage(danbun_v2) 병합 때문에 json만 고치면 반영 안 될 수 있음"
+   ],
+   "log": [],
+   "done": [],
+   "files": [
+    "danbun_data.json (당번 인원·일정 원본)"
+   ],
+   "sub": "직원지원",
+   "shots": []
+  },
+  {
+   "id": "k-bread",
+   "name": "후원물품 — 빵 (장블랑제리) 수령증",
+   "cat": "후원물품",
+   "type": "keep",
+   "counterpart": "",
+   "cycle": "매월",
+   "deadline": "",
+   "desc": "장블랑제리(해피피플) 빵 후원품 거래명세 검증 후 물품수령증 작성·날인·보관. 후원물품 중 빵만 김O원 유지, 그 외 물품은 김O리 담당.",
+   "systems": [
+    "한글(hwpx)",
+    "엑셀",
+    "문서생성 시스템"
+   ],
+   "steps": [
+    "날짜별 거래명세 엑셀 합산 검증 (총수량 SUM 범위 잘림 상습)",
+    "정리본 엑셀 생성",
+    "날짜별 물품수령증 hwpx 생성",
+    "합본 hwpx → PDF",
+    "출력 후 직인 수기 날인",
+    "스캔본 '..._합본_스캔.pdf' 로 수령증 폴더 보관"
+   ],
+   "assets": [
+    "클로드 스킬: jangblanc-donation-workflow",
+    "문서생성 시스템 [장블랑제리 합본] — 출장신청서+복명서 합본 1파일 생성 · https://chulchang-munseo.vercel.app/"
+   ],
+   "traps": [
+    "한컴 COM 은 Visible=true 필수, InsertFile 은 CreateAction 으로만 호출",
+    "KeepSection=1 + BreakPage 겹치면 빈 페이지 생김"
+   ],
+   "log": [],
+   "done": [],
+   "files": [
+    "물품수령증_YYYY-MM_합본.hwpx",
+    "거래명세 정리본_YYYY-MM.xlsx"
+   ],
+   "sub": "후원·상품권",
+   "shots": []
+  },
+  {
+   "id": "o-bokjiiljari-acc",
+   "name": "복지일자리 회계관리",
+   "cat": "회계",
+   "type": "out",
+   "counterpart": "최O연",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "복지일자리 재원 기안문서 정리·일반지출·회계관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "prio": 5,
+   "final": true,
+   "shots": []
+  },
+  {
+   "id": "o-bokjiiljari-biz",
+   "name": "복지일자리사업",
+   "cat": "사업",
+   "type": "out",
+   "counterpart": "최O연",
+   "cycle": "수시 / 급여 매월 5일",
+   "deadline": "복지일자리 급여 지급 매월 5일",
+   "desc": "사업장 신고, 입·퇴사 신고, 급여 지급, 인력관리, 대상자 업무 관리 등 사업 전반.",
+   "systems": [
+    "E나라"
+   ],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "급여 지급 마감이 매월 5일 — 인계 시 첫 달 마감 같이 돌려볼 것"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "prio": 5,
+   "final": true,
+   "shots": []
+  },
+  {
+   "id": "o-huwon-acc",
+   "name": "후원금 — 회계관리",
+   "cat": "후원금",
+   "type": "out",
+   "counterpart": "최O연",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "후원금 재원 기안문서 정리·일반지출·입출 및 회계관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "prio": 5,
+   "final": true,
+   "shots": []
+  },
+  {
+   "id": "o-huwon-cms",
+   "name": "후원금 — 모금·정산 (CMS·결과보고)",
+   "cat": "후원금",
+   "type": "out",
+   "counterpart": "최O연",
+   "cycle": "수시 / 결과보고 연 1회",
+   "deadline": "후원금 결과 보고 3월 31일까지",
+   "desc": "후원 CMS 관리(정기후원 결제·해지), 기부금영수증 발급, 후원금 정산보고서 작성. 후원금 결과보고는 지자체 제출 후 홈페이지에 20일 이상 공고.",
+   "systems": [
+    "후원 CMS"
+   ],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "홈페이지 20일 이상 공고 요건 — 3월 31일 마감 역산",
+    "후원물품(현물)은 이 보고에 포함하지 않음 — 후원물품 배분대장으로 별도 관리"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "후원·상품권",
+   "prio": 5,
+   "final": true,
+   "shots": []
+  },
+  {
+   "id": "o-huwon-mulpum",
+   "name": "후원물품 — 빵 외 접수·배분",
+   "cat": "후원물품",
+   "type": "out",
+   "counterpart": "김O리",
+   "cycle": "발생시",
+   "deadline": "",
+   "desc": "빵 이외 후원물품 접수, 물품수령증 발급, 대상자 배분 및 배분대장 관리.",
+   "systems": [
+    "문서생성 시스템"
+   ],
+   "steps": [],
+   "assets": [
+    "문서생성 시스템 [물품수령증] — 후원물품 수령증 · 품목표 + 사진 첨부 · https://chulchang-munseo.vercel.app/"
+   ],
+   "traps": [
+    "⚠ 최종 분장표의 «후원 최O연»에 포함되는지 확인 (현재 김O리 인계)",
+    "빵 / 빵 외 경계로 담당이 갈림 — 수령증 발급 주체 혼동 주의",
+    "물품 후원은 후원금과 별개 장부·별개 보고 — 후원금 결과보고에 섞지 말 것"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "후원·상품권",
+   "shots": []
+  },
+  {
+   "id": "o-insahoeui",
+   "name": "인사회의 정리",
+   "cat": "인사",
+   "type": "out",
+   "counterpart": "최O연",
+   "cycle": "발생시",
+   "deadline": "",
+   "desc": "인사회의 안건 정리 및 회의록 작성.",
+   "systems": [
+    "문서생성 시스템"
+   ],
+   "steps": [],
+   "assets": [
+    "문서생성 시스템 [인사회의록] — 인사회의록 생성 · https://chulchang-munseo.vercel.app/"
+   ],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "shots": []
+  },
+  {
+   "id": "o-chaeyong",
+   "name": "직원 채용 관리",
+   "cat": "인사",
+   "type": "out",
+   "counterpart": "최O연",
+   "cycle": "발생시",
+   "deadline": "",
+   "desc": "채용공고 게시, 지원자 접수·관리, 면접 진행·관리 등 채용 전반.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "prio": 5,
+   "final": true,
+   "shots": []
+  },
+  {
+   "id": "o-susinmunseo",
+   "name": "수신문서 관리",
+   "cat": "총무",
+   "type": "out",
+   "counterpart": "최O연",
+   "cycle": "매일",
+   "deadline": "",
+   "desc": "센터 수신문서 접수·분류·배부. 전담업무, 매일 처리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "매일 업무 — 인계 공백 생기면 바로 누락됨. 인계일 기준 미처리분 목록 같이 넘길 것"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "문서·공문",
+   "prio": 5,
+   "final": true,
+   "shots": []
+  },
+  {
+   "id": "o-charyang",
+   "name": "차량일지 · 차량관리",
+   "cat": "총무",
+   "type": "out",
+   "counterpart": "최O연",
+   "cycle": "발생시 / 운행일지 매월",
+   "deadline": "자동차보험 갱신: 레이 6월 18일, 스타렉스 10월 24일",
+   "desc": "차량 운행일지, 배차 현황, 점검관리 현황 관리. 대상 차량 = 레이, 스타렉스.",
+   "systems": [
+    "차량운행일지 웹앱"
+   ],
+   "steps": [],
+   "assets": [
+    "C:\\Users\\user\\Desktop\\♥휘원 개인업무폴더\\@클로드 전용폴더\\vehicle-log-app"
+   ],
+   "traps": [
+    "'보험 및 이용권' 시트는 레이·스타렉스 자동차보험 26년10월 담당을 김O원으로 표기 — 차량관리를 최O연에게 넘기면 보험 갱신도 같이 가는지 확인 필요",
+    "스타렉스 보험 만기 10월 24일 — 인계 직후 도래"
+   ],
+   "log": [],
+   "done": [],
+   "files": [
+    "차량운행일지_2026.xlsx",
+    "배차신청서.hwp",
+    "차량 점검관리대장.xlsx"
+   ],
+   "shots": [],
+   "sub": "차량",
+   "final": true
+  },
+  {
+   "id": "o-homepage",
+   "name": "홈페이지 관리 (grcil.kr)",
+   "cat": "사업",
+   "type": "out",
+   "counterpart": "최O연",
+   "cycle": "수시",
+   "deadline": "웹모아 도메인·유지보수 연장 11월 28일",
+   "desc": "센터 홈페이지 게시물 등록·수정 요청, 공고물 업로드(예·결산, 후원금 결과보고 20일 공고), 웹모아 유지보수 계약 관리.",
+   "systems": [
+    "WIMS 게시판(웹모아)"
+   ],
+   "steps": [
+    "게시물 등록·수정은 WIMS 게시판으로 웹모아에 요청",
+    "연간 유지보수 계약·도메인 연장 확인 (11월 28일)"
+   ],
+   "assets": [
+    "http://www.grcil.kr/"
+   ],
+   "traps": [
+    "개발완료 후 수정은 유료 (계약 제13조4항)",
+    "디자인·프로그램·스톡이미지는 이전 불가, 콘텐츠만 이전 가능",
+    "도메인 연장 만기 11월 28일 — 인계 직후 도래, 누락 주의"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "전산·장비",
+   "shots": []
+  },
+  {
+   "id": "i-jageumilbo",
+   "name": "자금일보",
+   "cat": "회계",
+   "type": "in",
+   "counterpart": "조O민",
+   "cycle": "매일",
+   "deadline": "매일",
+   "desc": "일일 자금 입출 현황 작성. 전담업무, 매일 처리.",
+   "systems": [
+    "기업은행",
+    "신한은행"
+   ],
+   "steps": [
+    "전일 기업은행·신한은행 수입·지출내역 확인",
+    "자금일보 [수입입력]·[지출입력] 시트 작성",
+    "[자금일보] 시트에서 전일 기준 조회 후 계좌별 잔액 대사",
+    "[출력하기]→[파일생성]으로 폴더에 당일자 저장, 기존 엑셀 원본도 저장",
+    "출력물 문서철 편철 + 확인 도장 날인",
+    "특이사항(중요 수입·지출) 발생 시 국장·소장·대표 즉시 보고"
+   ],
+   "assets": [],
+   "traps": [
+    "매일 업무 — 인수 첫날부터 끊기면 안 됨. 양식·계좌 목록·작성 기준 먼저 받을 것",
+    "월요일 작성 시 금·토·일 3일치를 모두 작성"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "prio": 2,
+   "owner": "김O원",
+   "final": true,
+   "shots": []
+  },
+  {
+   "id": "i-geupyeo",
+   "name": "급여 (사무국직원)",
+   "cat": "인사",
+   "type": "in",
+   "counterpart": "조O민",
+   "cycle": "매월",
+   "deadline": "매월 25일까지",
+   "desc": "사무국 직원 급여, 사회보험금, 퇴직적립금 이체.",
+   "systems": [
+    "보탬E",
+    "복지종합시스템",
+    "EDI",
+    "기업은행",
+    "신한은행",
+    "월급봉투(salaryday.co.kr)"
+   ],
+   "steps": [
+    "사전준비: 사회보험 요율·해당연도 지침(식비·명절수당 등) 변경 여부 확인",
+    "사전준비: 직원별 기본급 확인 + 중도 입·퇴사자 일할계산",
+    "사전준비: EDI에서 국민연금·건강보험·고용보험 고지내역 확인·정리",
+    "복지종합시스템 급여정보 입력(근로일·총근로시간·수당·재원별 배분)",
+    "[급여계산] 실행 — 부서별(사무국/사무행정실/활동지원팀/복지사업팀/사회서비스실) 순차 조회",
+    "[급여지급관리]에서 사회보험료를 실제 고지금액으로 수정·저장",
+    "급여자료 엑셀 반영(급여베이스·사회보험부담금대장) 및 총액 대사",
+    "재원별 급여 기안 작성(세부내역서·급여대장·사회보험부담금대장 첨부)",
+    "보탬e 인건비 집행등록·집행요청 (신규인력은 참여인력 등록 선행)",
+    "급여·사회보험료·퇴직적립금 예약이체 (인증서 확인)",
+    "급여명세서 발송(월급봉투) + 복지종합시스템 인쇄 보관",
+    "송금확인증 정리 + 원천세 신고 엑셀 반영으로 마감"
+   ],
+   "assets": [],
+   "traps": [
+    "마감 25일 고정 — 인수 첫 달 반드시 동행 처리",
+    "원천세·지방소득세 신고(매월 10일, 노O숙)와 연동됨",
+    "⚠ 사회보험료 수정·저장 후 [급여계산] 재실행 금지 — 수정값이 초기화됨"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "prio": 1,
+   "owner": "김O원",
+   "final": true,
+   "shots": []
+  },
+  {
+   "id": "i-gyeyak",
+   "name": "사무국직원 계약 관리",
+   "cat": "인사",
+   "type": "in",
+   "counterpart": "조O민",
+   "cycle": "발생시",
+   "deadline": "",
+   "desc": "사무국 직원 근로계약서 작성·갱신·보관 관리.",
+   "systems": [],
+   "steps": [
+    "계약직·상용근로자·기간제근로자 구분 확인",
+    "계약 전 호봉 및 개인정보 확인",
+    "서울시 사회복지시설 인건비 기준으로 계약서 작성",
+    "작성 후 간인하여 근로계약 담당자에게 보고",
+    "계약기간 만료일 확인 후 추가 계약 체결",
+    "계약서는 개인 인사파일에 보관"
+   ],
+   "assets": [],
+   "traps": [
+    "⚠ 최종 분장표에 없음 — 담당 확인 필요",
+    "기존 계약서 원본 보관 위치 인수받을 것"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "shots": []
+  },
+  {
+   "id": "i-beomjoe",
+   "name": "사무국 직원 범죄경력조회",
+   "cat": "인사",
+   "type": "other",
+   "counterpart": "최O연",
+   "cycle": "연 1회",
+   "deadline": "",
+   "desc": "범죄경력·장애인학대 관련 경력 조회. 기존 근로자는 연 1회 센터가 조회, 신규 입사자는 입사자 본인이 조회.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "기존자/신규자 조회 주체가 다름 — 혼동 주의"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "owner": "최O연",
+   "prio": "",
+   "status": "미착수",
+   "final": true,
+   "shots": []
+  },
+  {
+   "id": "i-saboheom-jeongsan",
+   "name": "사회보험 정산",
+   "cat": "인사",
+   "type": "in",
+   "counterpart": "조O민",
+   "cycle": "연 1회",
+   "deadline": "5월 중",
+   "desc": "사회보험료 연간 정산.",
+   "systems": [
+    "복지종합시스템"
+   ],
+   "steps": [
+    "전년도 정산자료 복사해 당해연도 정산 양식 준비",
+    "건강보험료·고용보험료 월별 고지내역 입력(당해 1~12월 + 익년 1~4월), TOTAL 시트 집계 확인",
+    "TOTAL 시트 집계를 보고자료의 건강보험집계·고용보험집계 시트에 반영",
+    "정산데이터(성명·사원번호·부서 등) + 활동지원사 급여데이터(당해 전체+익년 1~3월) 입력",
+    "고액 대상자는 정산데이터·건보고지·고용보고지·급여데이터 4종 재대조",
+    "사회보험정산 리스트 작성 후 산출값과 일치 확인",
+    "정산요약서+정산리스트 첨부하여 기안 작성 및 결재",
+    "정산내역(추가징수·환급 포함)을 급여담당자에게 전달 — 익년 5월 급여(4월분)에 반영"
+   ],
+   "assets": [],
+   "traps": [
+    "⚠ 최종 분장표에 없음 — 담당 확인 필요",
+    "'신고 및 보고' 시트상 사회보험료정산 담당은 '공통'",
+    "⚠ 정산 대상은 활동지원사만 — 익년 4월 사회보험료 고지내역 확정 후 착수"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "shots": []
+  },
+  {
+   "id": "i-saboheom-singo",
+   "name": "사회보험 신고 (공동)",
+   "cat": "인사",
+   "type": "in",
+   "counterpart": "노O숙",
+   "cycle": "수시 / 매월",
+   "deadline": "신규입사자·퇴사자 사회보험 신고 매월 14일까지",
+   "desc": "사무국·활동지원사 사회보험 취득·상실 신고. 10월부터 김O원·노O숙 공동 담당.",
+   "systems": [
+    "고용산재토탈서비스"
+   ],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "⚠ 최종 분장표에 없음 — 담당 확인 필요",
+    "공동 담당 — 누가 어느 대상(사무국/활동지원사)을 맡는지 경계 먼저 정할 것",
+    "보수총액신고 3월 14일까지(고용산재, 공통)"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "shots": []
+  },
+  {
+   "id": "i-bipum",
+   "name": "비품관리",
+   "cat": "총무",
+   "type": "in",
+   "counterpart": "조O민",
+   "cycle": "분기별 1회 / 재물조사 연 1회",
+   "deadline": "재물조사 연 1회",
+   "desc": "센터 비품 현황 관리. 전담업무. 재물조사 연 1회 실시.",
+   "systems": [
+    "문서생성 시스템"
+   ],
+   "steps": [],
+   "assets": [
+    "문서생성 시스템 [물품구매(내부기안)] — 내부기안 + 산출기초조사서 + 비교견적 3곳 · https://chulchang-munseo.vercel.app/"
+   ],
+   "traps": [
+    "⚠ 최종 분장표에 없음 — 담당 확인 필요",
+    "기존 '물품관리담당'과 범위 중복 확인",
+    "재물조사 대장 인수받을 것"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "비품·자산",
+   "shots": []
+  },
+  {
+   "id": "i-timoney",
+   "name": "법인티머니 · 법인 교통카드 관리",
+   "cat": "총무",
+   "type": "in",
+   "counterpart": "조O민",
+   "cycle": "수시 / 연 관리비 1회",
+   "deadline": "법인 교통카드 연 관리비 7월 3일",
+   "desc": "법인티머니 카드 발급·충전·사용내역 정산. 법인 교통카드 연 관리비 납부(재원: 활동지원사업, 운영).",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "⚠ 최종 분장표에 없음 — 담당 확인 필요"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "계정·카드",
+   "shots": []
+  },
+  {
+   "id": "i-injeungseo",
+   "name": "인증서 관리",
+   "cat": "총무",
+   "type": "in",
+   "counterpart": "조O민",
+   "cycle": "연 1회",
+   "deadline": "4월 4일 (갱신)",
+   "desc": "센터 공동인증서 발급·갱신·보관 관리. 재원: 활동지원사업.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "⚠ 최종 분장표에 없음 — 담당 확인 필요 (4월 4일 만기, 누락 시 시스템 전면 중단)",
+    "만기 놓치면 보탬E·홈텍스·인터넷뱅킹 전부 막힘 — 최우선 인수 항목"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "계정·카드",
+   "shots": []
+  },
+  {
+   "id": "i-jadongcha-boheom",
+   "name": "자동차보험 갱신 (레이 · 스타렉스)",
+   "cat": "총무",
+   "type": "in",
+   "counterpart": "조O민",
+   "cycle": "연 1회 (차량별)",
+   "deadline": "레이 6월 18일 / 스타렉스 10월 24일",
+   "desc": "법인 차량 자동차보험 갱신. 재원: 운영.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "⚠ 최종 분장표에 없음 — 차량일지가 최O연이면 함께 가는지 확인",
+    "⚠ 차량관리 본체는 최O연에게 인계하는데 보험 갱신만 김O원으로 표기됨 — 담당 확정 필요",
+    "스타렉스 10월 24일 만기 — 재분장 직후 도래"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "차량",
+   "shots": []
+  },
+  {
+   "id": "t-saengil",
+   "name": "사무국 생일 챙기기",
+   "cat": "총무",
+   "type": "tbd",
+   "counterpart": "",
+   "cycle": "발생시",
+   "deadline": "",
+   "desc": "사무국 직원 생일 관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "'26년 10월 담당' 공란 — 유지/인계 확정 필요"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "직원지원",
+   "shots": []
+  },
+  {
+   "id": "c-boheom",
+   "name": "각종보험",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "센터 각종 보험 가입·갱신 관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "규정·계약",
+   "shots": []
+  },
+  {
+   "id": "c-gyeyak",
+   "name": "계약관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "발생시",
+   "deadline": "",
+   "desc": "소모품 계약 및 각종 계약 관리 총괄.",
+   "systems": [
+    "문서생성 시스템"
+   ],
+   "steps": [],
+   "assets": [
+    "문서생성 시스템 [고정거래(내부기안)] — 고정거래 기안 · 과거 기안에서 찾아 채우기 · https://chulchang-munseo.vercel.app/"
+   ],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "규정·계약",
+   "shots": []
+  },
+  {
+   "id": "c-gonggong",
+   "name": "공공요금 관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "매월 1회",
+   "deadline": "",
+   "desc": "전기·수도·통신 등 공공요금 납부 관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "계정·카드",
+   "shots": []
+  },
+  {
+   "id": "c-naegyu",
+   "name": "내규 관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "발생시",
+   "deadline": "",
+   "desc": "취업규칙 및 센터 규정 관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "규정·계약",
+   "shots": []
+  },
+  {
+   "id": "c-changgo",
+   "name": "내부창고 관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "내부창고 총괄 관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "문서·공문",
+   "shots": []
+  },
+  {
+   "id": "c-notebook",
+   "name": "노트북 관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "주 1회",
+   "deadline": "",
+   "desc": "노트북 충전·관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "케어플러스 2024.4월 종료 — 재가입 불가"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "전산·장비",
+   "shots": []
+  },
+  {
+   "id": "c-mujeongi",
+   "name": "무전기 관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "월 1회",
+   "deadline": "",
+   "desc": "무전기 점검·충전 관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "비품·자산",
+   "shots": []
+  },
+  {
+   "id": "c-server",
+   "name": "서버 관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "폴더 및 파일 관리, 사용자 관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "전산·장비",
+   "shots": []
+  },
+  {
+   "id": "c-serverroom",
+   "name": "서버실 관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "매일",
+   "deadline": "",
+   "desc": "서버 리부팅 및 서버실 내부 정리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "전산·장비",
+   "shots": []
+  },
+  {
+   "id": "c-center",
+   "name": "센터 내부 관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "센터 내 비품 등 유지관리 총괄.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "비품·자산",
+   "shots": []
+  },
+  {
+   "id": "c-somopum",
+   "name": "소모품 관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "소모품 현황 파악 및 구매.",
+   "systems": [
+    "문서생성 시스템"
+   ],
+   "steps": [],
+   "assets": [
+    "문서생성 시스템 [물품구매(내부기안)] — 소모품 구매 기안 · https://chulchang-munseo.vercel.app/"
+   ],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "비품·자산",
+   "shots": []
+  },
+  {
+   "id": "c-swhw",
+   "name": "소프트웨어 및 하드웨어 관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "각 프로그램 설치 및 유지 관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [
+    "구독 갱신: 비즈폼 8/9, 미리캔버스 8/12, DAUM 메일 5/7, Adobe·ChatGPT·Claude 별도 관리"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "전산·장비",
+   "shots": []
+  },
+  {
+   "id": "c-chonghoe",
+   "name": "총회",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "연 1회 이상",
+   "deadline": "",
+   "desc": "총회 자료집 제작·준비, 안건정리, 회의록.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "회의체",
+   "shots": []
+  },
+  {
+   "id": "c-hwilchair",
+   "name": "휠체어 관리",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "다같이",
+   "cycle": "주 1회",
+   "deadline": "",
+   "desc": "휠체어 충전·관리.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "비품·자산",
+   "shots": []
+  },
+  {
+   "id": "c-handtowel",
+   "name": "핸드타올",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "공통",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "핸드타올 비치·보충. 조O민 → 공통으로 전환.",
+   "systems": [],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "비품·자산",
+   "shots": []
+  },
+  {
+   "id": "c-singo",
+   "name": "각종 신고",
+   "cat": "총무",
+   "type": "common",
+   "counterpart": "노O숙",
+   "cycle": "발생시",
+   "deadline": "장애인고용부담금·고용현황 1월 31일",
+   "desc": "장애인고용장려금, 외부 요청 문서 등 신고. 26년10월 담당 노O숙.",
+   "systems": [
+    "한국장애인고용공단 E신고"
+   ],
+   "steps": [],
+   "assets": [],
+   "traps": [],
+   "log": [],
+   "done": [],
+   "files": [],
+   "sub": "문서·공문",
+   "shots": []
+  },
+  {
+   "id": "k-seoul",
+   "name": "서울시 재원 회계관리",
+   "cat": "회계",
+   "sub": "",
+   "type": "keep",
+   "owner": "김O원",
+   "counterpart": "",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "서울시 보조금 재원 입출 업무 및 회계관리.",
+   "status": "진행중",
+   "prio": 5,
+   "final": true,
+   "systems": [],
+   "steps": [],
+   "files": [],
+   "shots": [],
+   "assets": [],
+   "traps": [
+    "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
+   ],
+   "next": [],
+   "log": [],
+   "done": []
+  },
+  {
+   "id": "k-gubi",
+   "name": "구비 재원 회계관리",
+   "cat": "회계",
+   "sub": "",
+   "type": "keep",
+   "owner": "김O원",
+   "counterpart": "",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "구비(구 보조금) 재원 입출 업무 및 회계관리.",
+   "status": "진행중",
+   "prio": 5,
+   "final": true,
+   "systems": [],
+   "steps": [],
+   "files": [],
+   "shots": [],
+   "assets": [],
+   "traps": [
+    "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
+   ],
+   "next": [],
+   "log": [],
+   "done": []
+  },
+  {
+   "id": "k-yesugeum",
+   "name": "예수금 회계관리",
+   "cat": "회계",
+   "sub": "",
+   "type": "keep",
+   "owner": "김O원",
+   "counterpart": "",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "예수금 계정 관리 — 원천징수분 등 예수·지급 대사.",
+   "status": "진행중",
+   "prio": 5,
+   "final": true,
+   "systems": [],
+   "steps": [],
+   "files": [],
+   "shots": [],
+   "assets": [],
+   "traps": [
+    "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
+   ],
+   "next": [],
+   "log": [],
+   "done": []
+  },
+  {
+   "id": "k-jayul",
+   "name": "자율재원 회계관리",
+   "cat": "회계",
+   "sub": "",
+   "type": "keep",
+   "owner": "김O원",
+   "counterpart": "",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "자율재원 입출 업무 및 회계관리.",
+   "status": "진행중",
+   "prio": 5,
+   "final": true,
+   "systems": [],
+   "steps": [],
+   "files": [],
+   "shots": [],
+   "assets": [],
+   "traps": [
+    "2026.10 최종 분장표 기준. 이전 담당(인계자) 확인 필요 — 첫 마감은 인계자와 동행 처리할 것"
+   ],
+   "next": [],
+   "log": [],
+   "done": []
+  },
+  {
+   "id": "x-jutaek3",
+   "name": "주택 3개소 회계관리 (공공요금 제외)",
+   "cat": "회계",
+   "sub": "",
+   "type": "other",
+   "owner": "최O연",
+   "counterpart": "최O연",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "자립생활주택 가형·다형1·다형2 입출 업무 및 회계관리. 공공요금은 제외.",
+   "status": "미착수",
+   "prio": 5,
+   "final": true,
+   "systems": [],
+   "steps": [],
+   "files": [],
+   "shots": [],
+   "assets": [],
+   "traps": [],
+   "next": [],
+   "log": [],
+   "done": []
+  },
+  {
+   "id": "x-toejik",
+   "name": "퇴직금 · 기타소득 · 퇴사자 정산",
+   "cat": "회계",
+   "sub": "",
+   "type": "other",
+   "owner": "최O연",
+   "counterpart": "최O연",
+   "cycle": "수시",
+   "deadline": "",
+   "desc": "퇴직금, 기타소득 지급·신고, 퇴사자 정산.",
+   "status": "미착수",
+   "prio": "1,2",
+   "final": true,
+   "systems": [],
+   "steps": [],
+   "files": [],
+   "shots": [],
+   "assets": [],
+   "traps": [],
+   "next": [],
+   "log": [],
+   "done": []
+  },
+  {
+   "id": "i-imcharyo",
+   "name": "사무실 임차료·공공요금 지출",
+   "cat": "회계",
+   "type": "in",
+   "counterpart": "",
+   "cycle": "매월",
+   "deadline": "",
+   "desc": "사무실 임차료·관리비·수용비 보탬e 집행 및 활동지원사업 추가 이체",
+   "systems": [
+    "보탬E",
+    "신한은행"
+   ],
+   "steps": [
+    "임차료·관리비 보조금(월 1,200,000원) 및 수용비 보조금(분기 2,000,000원) 지원내역 확인",
+    "전자세금계산서(메일)·명세서(우편) 수신 확인 및 보관",
+    "보탬e [집행등록(증빙우선)]에 등록 — 지방비 1,200,000원, 거래처유형 개인사업자",
+    "[계좌(예금주) 확인] 후 저장·집행요청",
+    "[집행이체관리]에서 이체실행(인증서 1번), 신한은행 출금 확인",
+    "보조금 초과분(임차료+부가세-1,000,000원 / 관리비-200,000원)을 활동지원 통장에서 추가 이체",
+    "세부내역서·송금확인증·청구서 원본·전자세금계산서를 활동지원사업 담당자에게 전달"
+   ],
+   "assets": [],
+   "traps": [
+    "매년 1월 전년도 운영비 정산자료 + 당해연도 사업계획서 제출 필요",
+    "⚠ 최종 분장표에 없음 — 기존 담당자에게 확인 필요"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "prio": 2,
+   "owner": "김O원",
+   "final": false,
+   "shots": []
+  },
+  {
+   "id": "i-dancheban-boheom",
+   "name": "단체상해공제(한국사회복지공제회)",
+   "cat": "인사",
+   "type": "in",
+   "counterpart": "",
+   "cycle": "발생시",
+   "deadline": "만료일 11월 9일",
+   "desc": "직원 단체상해공제 가입·해지 관리",
+   "systems": [
+    "한국사회복지공제회"
+   ],
+   "steps": [
+    "신규 입사자 개인정보 동의서 수령",
+    "인원추가 → 인적정보 입력·전체 확인 및 동의·확인자 정보 입력 후 저장",
+    "청약서/영수증 출력 → 기안 작성 후 지출(보조금 대상자=자율재원, 활동지원 대상자=활동지원재원)",
+    "퇴사자 발생 시 인원해지 → 가입자 리스트에서 대상자 선택·등록",
+    "환급정보 입력(가입 시 지출한 재원의 계좌로 환급 처리)"
+   ],
+   "assets": [],
+   "traps": [
+    "정부지원 단체상해공제 우선 가입, 소진 시 일반 상해 — 현재 일반 상해로 가입 중",
+    "⚠ 최종 분장표에 없음 — 기존 담당자에게 확인 필요"
+   ],
+   "log": [],
+   "done": [],
+   "files": [],
+   "prio": 2,
+   "owner": "김O원",
+   "final": false,
+   "shots": []
+  }
+ ],
+ "people": [
+  {
+   "name": "이O수",
+   "dept": "구로IL센터",
+   "team": "",
+   "rank": "대표",
+   "role": "센터총괄",
+   "ratio": "활동지원사업 100%",
+   "note": "",
+   "duties": [
+    "대외업무 등",
+    "업무 조정 및 배치",
+    "회계 최종 결재권자",
+    "조직 운영 총괄"
+   ]
+  },
+  {
+   "name": "이O희",
+   "dept": "사무국",
+   "team": "",
+   "rank": "소장",
+   "role": "센터총괄",
+   "ratio": "중증장애인센터지원사업90% 활동지원사업10%",
+   "note": "",
+   "duties": [
+    "대외업무 등",
+    "장애인복지사업 총괄",
+    "사업계획 수립",
+    "이용자 상담관리 총괄",
+    "동료상담 총괄"
+   ]
+  },
+  {
+   "name": "신O철",
+   "dept": "사무국",
+   "team": "",
+   "rank": "사무국장",
+   "role": "사무국 총괄",
+   "ratio": "중증장애인센터지원사업 10% 활동지원사업 90%",
+   "note": "",
+   "duties": [
+    "활동지원사업 업무 관리",
+    "재규정 관리",
+    "행정 회계 관리",
+    "예산 결산 관리"
+   ]
+  },
+  {
+   "name": "이O민",
+   "dept": "사회서비스실",
+   "team": "",
+   "rank": "실장",
+   "role": "PAS 총괄, 이용자관리",
+   "ratio": "활동지원사업 100%",
+   "note": "",
+   "duties": [
+    "PAS 사업계획서(예산) 수립",
+    "활동지원 가산수당 지급내역 관리",
+    "활동지원 단기정산",
+    "이용인 종결보고서 작성",
+    "대상자 등급/본인부담금 변경 확인 및 안내",
+    "신규 이용자 관리",
+    "예외지급청구",
+    "PAS 총괄 결과보고서",
+    "활동지원사 복리후생",
+    "활동지원사 보수교육",
+    "월 사례회의",
+    "이용자/활동지원사 관리(상담 및 고충처리 업무)",
+    "모니터링",
+    "매칭업무",
+    "구로구청/국민건강보험/국민연금공단 관련 업무",
+    "PAS 평가 업무"
+   ]
+  },
+  {
+   "name": "박O미",
+   "dept": "사회서비스실",
+   "team": "PAS팀",
+   "rank": "팀장",
+   "role": "매칭업무, 활동지원사 단합사업 총괄",
+   "ratio": "활동지원사업 100%",
+   "note": "",
+   "duties": [
+    "바우처 미생성자 관리",
+    "활동지원인력 파견(대기자 관리/매칭업무)",
+    "다과 구입",
+    "활동지원 복지사업 총괄",
+    "활동지원 복지사업(신년발표회)",
+    "활동지원사 실습",
+    "활동지원 매칭 및 대기자 관리",
+    "예외지급청구",
+    "월 사례회의",
+    "이용자/활동지원사 관리(상담 및 고충처리 업무)",
+    "모니터링",
+    "구로구청/국민건강보험/국민연금공단 관련 업무",
+    "PAS 평가 업무"
+   ]
+  },
+  {
+   "name": "권O지",
+   "dept": "사회서비스실",
+   "team": "PAS팀",
+   "rank": "사회복지사",
+   "role": "활동지원사 관리",
+   "ratio": "활동지원사업 100%",
+   "note": "",
+   "duties": [
+    "활동지원사 총괄 관리(퇴직연금/사직서/휴직원/복직원)",
+    "활동지원사 입퇴사 관리",
+    "신규 활동지원사 관리",
+    "제공인력 정보 업데이트(전자바우처)",
+    "활동지원 복지사업(소모임)",
+    "이상결제 지급보류 관리",
+    "가족급여 모니터링",
+    "예외지급청구",
+    "월 사례회의",
+    "이용자/활동지원사 관리(상담 및 고충처리 업무)",
+    "모니터링",
+    "매칭업무"
+   ]
+  },
+  {
+   "name": "정O윤",
+   "dept": "사회서비스실",
+   "team": "PAS팀",
+   "rank": "사회복지사",
+   "role": "단말기관리, 소급결제 관리",
+   "ratio": "활동지원사업 100%",
+   "note": "",
+   "duties": [
+    "소급결제 총괄현황 관리",
+    "활동지원 복지사업(나들이)",
+    "활동지원 복지사업(활동지원인력관리)",
+    "단말기 관리",
+    "정보문자발송",
+    "전담인력 직무교육",
+    "기존 활동지원인력 결격사유(장애인학대)",
+    "예외지급청구",
+    "월 사례회의",
+    "이용자/활동지원사 관리(상담 및 고충처리 업무)",
+    "모니터링",
+    "매칭업무"
+   ]
+  },
+  {
+   "name": "김O진",
+   "dept": "사회서비스실",
+   "team": "PAS팀",
+   "rank": "사회복지사",
+   "role": "모니터링, 이용자 교육",
+   "ratio": "활동지원사업 100%",
+   "note": "",
+   "duties": [
+    "과오결제반납현황 관리",
+    "대상자 SMS 수신번호 관리",
+    "이용자 교육",
+    "신규 활동지원인력 결격사유 조회",
+    "직장인 건강검진",
+    "예외지급청구",
+    "월 사례회의",
+    "이용자/활동지원사 관리(상담 및 고충처리 업무)",
+    "모니터링(결과보고서)",
+    "매칭업무"
+   ]
+  },
+  {
+   "name": "김O리",
+   "dept": "사회서비스실",
+   "team": "PAS팀",
+   "rank": "사회복지사",
+   "role": "급여일정표 관리",
+   "ratio": "활동지원사업 100%",
+   "note": "",
+   "duties": [
+    "신규이용자 초기 모니터링",
+    "급여일정표 관리",
+    "활동지원 복지사업(나들이)",
+    "월 이용자/활동지원사 상담일지",
+    "기존 활동지원인력 결격사유(정신질환)",
+    "예외지급청구",
+    "월 사례회의",
+    "이용자/활동지원사 관리(상담 및 고충처리 업무)",
+    "모니터링(결과보고서)",
+    "매칭업무"
+   ]
+  },
+  {
+   "name": "노O숙",
+   "dept": "사무행정실",
+   "team": "",
+   "rank": "사회복지사",
+   "role": "활동지원사업 행정",
+   "ratio": "활동지원사업 100%",
+   "note": "",
+   "duties": [
+    "활동지원사업 입출 업무 및 회계관리",
+    "활동지원사 인사 관리",
+    "사무국, 활동지원사 사회보험 신고",
+    "사무국 직무교육 담당",
+    "휴가 및 근태 관리",
+    "활동보조인 급여 관리",
+    "세무신고",
+    "운영위원회 관련 업무 담당",
+    "예·결산 작성",
+    "배상책임보험 업무",
+    "활동지원팀 업무지원",
+    "사업체노동력조사(고용노동부/매월) 담당"
+   ]
+  },
+  {
+   "name": "최O연",
+   "dept": "사무행정실",
+   "team": "",
+   "rank": "사회복지사",
+   "role": "자립생활주택사업 행정",
+   "ratio": "활동지원사업 100%",
+   "note": "",
+   "duties": [
+    "주택, 퇴직금 입출업무 및 회계관리",
+    "퇴직연금(활동지원사,사무국)",
+    "자조모임지원 사업 인력관리",
+    "활동지원사업 기관 홍보 보조",
+    "이용자 및 활동지원사 모집 보조",
+    "활동지원사 보수교육 및 복지사업(보조)",
+    "후원 및 회계관리",
+    "활동지원팀 업무지원",
+    "차량 관리 담당",
+    "홈페이지 관리",
+    "채용관리"
+   ]
+  },
+  {
+   "name": "김O원",
+   "dept": "사무행정실",
+   "team": "",
+   "rank": "사회복지사",
+   "role": "장애인자립생활센터 행정",
+   "ratio": "중증장애인센터지원 100%",
+   "note": "",
+   "duties": [
+    "중증장애인자립생활센터사업,거주시설연계사업, 민간단체보조금 입출 업무 및 회계관리",
+    "민간단체보조금, 시설운영 입출 업무 및 회계관리",
+    "물품관리담당",
+    "운영위원회 관련 업무 담당",
+    "예·결산 작성",
+    "사무국 처우개선비 담당",
+    "처우개선비 입출업무 및 회계관리",
+    "증명서 발급",
+    "복지기금 사업"
+   ]
+  },
+  {
+   "name": "이O은",
+   "dept": "개별지원팀",
+   "team": "",
+   "rank": "팀장",
+   "role": "",
+   "ratio": "중증장애인센터지원사업 79% 후원 21%",
+   "note": "",
+   "duties": [
+    "동료상담 총괄",
+    "중증장애인센터지원사업 담당",
+    "복지일자리사업 총괄"
+   ]
+  },
+  {
+   "name": "김O서",
+   "dept": "지역사업팀",
+   "team": "",
+   "rank": "팀장",
+   "role": "장애인자립생활센터 지원사업담당",
+   "ratio": "중증장애인센터지원 100%",
+   "note": "",
+   "duties": [
+    "중증장애인센터지원사업 담당",
+    "개별자립지원 사업 담당",
+    "지역사회서비스 담당",
+    "복지일자리사업 담당"
+   ]
+  },
+  {
+   "name": "(공석)",
+   "dept": "지역사업팀",
+   "team": "",
+   "rank": "사회복지사",
+   "role": "",
+   "ratio": "중증장애인센터지원 100%",
+   "note": "*업무인계: 이O은, 김O서",
+   "duties": [
+    "중증장애인센터지원사업 담당",
+    "개별자립지원 사업 담당",
+    "지역사회서비스 담당"
+   ]
+  },
+  {
+   "name": "주O원",
+   "dept": "지역사업팀",
+   "team": "",
+   "rank": "사회복지사",
+   "role": "장애인자립생활센터 지원사업담당",
+   "ratio": "중증장애인센터지원 100%",
+   "note": "",
+   "duties": [
+    "중증장애인센터지원사업 담당",
+    "동료상담 담당"
+   ]
+  },
+  {
+   "name": "(공석)",
+   "dept": "지역사업팀",
+   "team": "",
+   "rank": "사회복지사",
+   "role": "IL사업팀 총괄",
+   "ratio": "활동지원사업 100%",
+   "note": "*업무인계: 이O민, 이O은, 김O서",
+   "duties": [
+    "활동지원사업 복지사업담당",
+    "이용자/활동지원사 관리(상담 및 고충처리 업무)",
+    "PAS 평가 업무",
+    "중증장애인센터지원사업 담당"
+   ]
+  },
+  {
+   "name": "이O원",
+   "dept": "개별지원팀",
+   "team": "",
+   "rank": "사회복지사",
+   "role": "자립생활주택(가형) 사업담당",
+   "ratio": "주택사업 100%",
+   "note": "*업무인계: 이O은, 유O정, 홍O서",
+   "duties": [
+    "자립생활주택 가형 개별자립지원계획 수립",
+    "자립생활주택 가형 입주자 일상 생활지원 및 관리",
+    "자립생활주택 가형 입주자 상담 및 모니터링",
+    "자립생활주택 가형 입주자 필요 자원 정보 제공 및 연계",
+    "퇴거자 지원 및 모니터링",
+    "기타 행정 업무(업무보고, 실적관리, 정산보고 등)"
+   ]
+  },
+  {
+   "name": "유O정",
+   "dept": "개별지원팀",
+   "team": "",
+   "rank": "사회복지사",
+   "role": "자립생활주택(다형1) 사업담당",
+   "ratio": "주택사업 100%",
+   "note": "",
+   "duties": [
+    "자립생활주택 다형1 개별자립지원계획 수립",
+    "자립생활주택 다형1 입주자 일상 생활지원 및 관리",
+    "자립생활주택 다형1 입주자 상담 및 모니터링",
+    "자립생활주택 다형1 입주자 필요 자원 정보 제공 및 연계",
+    "퇴거자 지원 및 모니터링",
+    "기타 행정 업무(업무보고, 실적관리, 정산보고 등)"
+   ]
+  },
+  {
+   "name": "홍O서",
+   "dept": "개별지원팀",
+   "team": "",
+   "rank": "사회복지사",
+   "role": "개별지원팀 총괄",
+   "ratio": "주택사업 100%",
+   "note": "",
+   "duties": [
+    "자립생활주택 다형2 개별자립지원계획 수립",
+    "자립생활주택 다형2 입주자 일상 생활지원 및 관리",
+    "자립생활주택 다형2 입주자 상담 및 모니터링",
+    "자립생활주택 다형2 입주자 필요 자원 정보 제공 및 연계",
+    "퇴거자 지원 및 모니터링",
+    "기타 행정 업무(업무보고, 실적관리, 정산보고 등)"
+   ]
+  }
+ ],
+ "org": [
+  "구로IL센터",
+  "사무국",
+  "사회서비스실",
+  "사무행정실",
+  "개별지원팀",
+  "지역사업팀"
+ ],
+ "events": [
+  {
+   "id": "e-singo-2",
+   "title": "기타소득 지급",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 5일",
+   "system": "보탬E, 인터넷뱅킹, 진우",
+   "owner": "최O연",
+   "prev": "최O연",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-3",
+   "title": "복지일자리 급여 지급",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 5일",
+   "system": "E나라",
+   "owner": "김O원",
+   "prev": "최O연",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-4",
+   "title": "활동지원사 급여 지급",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 10일",
+   "system": "진우급여시스템",
+   "owner": "노O숙",
+   "prev": "노O숙",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-5",
+   "title": "사무국직원 급여 지급",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 25일",
+   "system": "보탬E",
+   "owner": "조O민",
+   "prev": "조O민",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-6",
+   "title": "원천세, 지방소득세 신고",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 10일까지",
+   "system": "홈텍스",
+   "owner": "노O숙",
+   "prev": "노O숙",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-7",
+   "title": "기타소득 및 일용근로소득 신고",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 31일까지",
+   "system": "홈텍스",
+   "owner": "최O연, 노O숙",
+   "prev": "최O연, 노O숙",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-8",
+   "title": "퇴직연금 부담금 이체",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 14일",
+   "system": "기업은행 인터넷뱅킹",
+   "owner": "최O연",
+   "prev": "최O연",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-9",
+   "title": "신규입사자 및 퇴사자 사회보험 신고",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 14일까지",
+   "system": "고용산재토탈서비스",
+   "owner": "노O숙",
+   "prev": "노O숙",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-10",
+   "title": "퇴직연금 지급 신청",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 16일",
+   "system": "기업은행 인터넷뱅킹",
+   "owner": "최O연",
+   "prev": "최O연",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-11",
+   "title": "활동지원사 입사자 등록",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 5일까지",
+   "system": "진우시스템",
+   "owner": "노O숙",
+   "prev": "노O숙",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-12",
+   "title": "사업체노동력조사",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 12일까지",
+   "system": "고용노동부",
+   "owner": "노O숙",
+   "prev": "노O숙",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-13",
+   "title": "퇴사자정산",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 20일",
+   "system": "",
+   "owner": "최O연",
+   "prev": "최O연",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-14",
+   "title": "사회보험료정산",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "5월중",
+   "system": "",
+   "owner": "공통",
+   "prev": "공통",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-15",
+   "title": "근로소득 간이지급명세서 제출",
+   "cat": "신고·보고",
+   "detail": "1월~6월 상반기 제출",
+   "due": "7월 31일",
+   "system": "홈텍스",
+   "owner": "노O숙",
+   "prev": "노O숙",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-16",
+   "title": "근로소득 간이지급명세서 제출",
+   "cat": "신고·보고",
+   "detail": "7월~12월 하반기 제출",
+   "due": "1월 31일",
+   "system": "홈텍스",
+   "owner": "노O숙",
+   "prev": "노O숙",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-17",
+   "title": "장애인고용부담금 및 고용현황 신고",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "1월 31일",
+   "system": "한국장애인고용공단 E신고",
+   "owner": "공통",
+   "prev": "공통",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-18",
+   "title": "기타소득 지급명세서 신고",
+   "cat": "신고·보고",
+   "detail": "전년도 지급분 전체 신고",
+   "due": "2월 말일까지",
+   "system": "홈텍스",
+   "owner": "최O연",
+   "prev": "최O연",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-19",
+   "title": "보수총액신고",
+   "cat": "신고·보고",
+   "detail": "고용산재",
+   "due": "3월 14일까지",
+   "system": "고용산재토탈서비스",
+   "owner": "공통",
+   "prev": "공통",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-20",
+   "title": "후원금 결과 보고",
+   "cat": "신고·보고",
+   "detail": "지자체 제출 후 홈페이지 업로드 20일 이상 공고",
+   "due": "3월 31일까지",
+   "system": "",
+   "owner": "김O원",
+   "prev": "최O연",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-21",
+   "title": "결산 보고",
+   "cat": "신고·보고",
+   "detail": "지자체 제출 후 홈페이지 업로드 20일 이상 공고",
+   "due": "3월 31일까지",
+   "system": "",
+   "owner": "공통",
+   "prev": "공통",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-22",
+   "title": "예산 보고",
+   "cat": "신고·보고",
+   "detail": "지자체 제출 후 홈페이지 업로드 20일 이상 공고",
+   "due": "회기년도 시작 5일 전 제출 (12월 26일)",
+   "system": "",
+   "owner": "공통",
+   "prev": "공통",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-23",
+   "title": "연말정산",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "3월 10일까지",
+   "system": "홈텍스",
+   "owner": "공통",
+   "prev": "공통",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-24",
+   "title": "재물조사",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "연 1회",
+   "system": "",
+   "owner": "조O민",
+   "prev": "조O민",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-singo-25",
+   "title": "근무평정",
+   "cat": "신고·보고",
+   "detail": "수습직원은 수습평가로 대체하고, 나머지 인원 진행",
+   "due": "연 1회",
+   "system": "",
+   "owner": "정O",
+   "prev": "정O",
+   "fund": "",
+   "note": "",
+   "source": "신고 및 보고 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-2",
+   "title": "복지시설 종합안전배상공제 · 사무실",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "4월 15일",
+   "system": "",
+   "owner": "노O숙",
+   "prev": "노O숙",
+   "fund": "활동지원사업",
+   "note": "한국사회복지공제회",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-3",
+   "title": "단체상해공제 · 사무국직원",
+   "cat": "보험·구독 만기",
+   "detail": "현재 정부지원금 소진으로 일반으로 가입 신규 가입시 정부지원금 소진 전이면 정부지원금단체상해공제 상품으로 가입",
+   "due": "11월 9일",
+   "system": "",
+   "owner": "조O민",
+   "prev": "조O민",
+   "fund": "운영, 활동지원사업",
+   "note": "한국사회복지공제회",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-4",
+   "title": "신원보증보험 · 자립생활주택 코디",
+   "cat": "보험·구독 만기",
+   "detail": "최O나(공석)",
+   "due": "6월 23일",
+   "system": "",
+   "owner": "담당코디",
+   "prev": "담당코디",
+   "fund": "주택 가형",
+   "note": "SGI서울보증, 최O나",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-5",
+   "title": "신원보증보험 · 자립생활주택 코디",
+   "cat": "보험·구독 만기",
+   "detail": "유O정",
+   "due": "3월 5일",
+   "system": "",
+   "owner": "담당코디",
+   "prev": "담당코디",
+   "fund": "주택 다형1",
+   "note": "SGI서울보증",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-6",
+   "title": "신원보증보험 · 자립생활주택 코디",
+   "cat": "보험·구독 만기",
+   "detail": "홍O서",
+   "due": "9월 22일",
+   "system": "",
+   "owner": "담당코디",
+   "prev": "담당코디",
+   "fund": "주택 다형2",
+   "note": "SGI서울보증",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-7",
+   "title": "신원보증보험 · 사무국 회계담당직원 및 간부",
+   "cat": "보험·구독 만기",
+   "detail": "즉위식으로 가입, 가입시 즉위 확인할것",
+   "due": "11월 28일",
+   "system": "",
+   "owner": "최O연",
+   "prev": "최O연",
+   "fund": "활동지원사업",
+   "note": "SGI서울보증",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-8",
+   "title": "배상책임보험 · 활동지원사",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "12월(차기년 시작 전)",
+   "system": "",
+   "owner": "노O숙",
+   "prev": "노O숙",
+   "fund": "활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-9",
+   "title": "자동차보험 · 레이",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "6월 18일",
+   "system": "",
+   "owner": "김O원",
+   "prev": "조O민",
+   "fund": "운영",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-10",
+   "title": "자동차보험 · 스타렉스",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "10월 24일",
+   "system": "",
+   "owner": "김O원",
+   "prev": "조O민",
+   "fund": "운영",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-11",
+   "title": "화재보험 · 사무실(8층)",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "12월 30일",
+   "system": "",
+   "owner": "최O연",
+   "prev": "최O연",
+   "fund": "활동지원사업",
+   "note": "메리츠화재(TEL [연락처 비공개])",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-12",
+   "title": "화재보험 · 사무실(5층)",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "7월 22일",
+   "system": "",
+   "owner": "최O연",
+   "prev": "최O연",
+   "fund": "활동지원사업",
+   "note": "메리츠화재(TEL [연락처 비공개])",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-13",
+   "title": "화재보험 · 자립생활주택 가형(온수동)",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "12월 19일",
+   "system": "",
+   "owner": "담당코디",
+   "prev": "담당코디",
+   "fund": "운영(주택 계좌로 자부담처리)",
+   "note": "메리츠화재(TEL [연락처 비공개])",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-14",
+   "title": "화재보험 · 자립생활주택 다형1(시흥동)",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "7월 3일",
+   "system": "",
+   "owner": "담당코디",
+   "prev": "담당코디",
+   "fund": "운영(주택 계좌로 자부담처리)",
+   "note": "메리츠화재(TEL [연락처 비공개])",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-15",
+   "title": "화재보험 · 자립생활주택 다형2(개봉동)",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "9월 12일",
+   "system": "",
+   "owner": "담당코디",
+   "prev": "담당코디",
+   "fund": "운영(주택 계좌로 자부담처리)",
+   "note": "메리츠화재(TEL [연락처 비공개])",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-16",
+   "title": "노트북 케어플러스",
+   "cat": "보험·구독 만기",
+   "detail": "종료 이후에는 가입 불가능",
+   "due": "2024. 4월 종료",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-17",
+   "title": "태블릿",
+   "cat": "보험·구독 만기",
+   "detail": "종료 이후에는 가입 불가능",
+   "due": "2024. 8월",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-18",
+   "title": "웹모아 홈페이지 · 센터 홈페이지",
+   "cat": "보험·구독 만기",
+   "detail": "도메인 서비스 연장",
+   "due": "11월 28일",
+   "system": "",
+   "owner": "김O원",
+   "prev": "김O원",
+   "fund": "활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-19",
+   "title": "진우 연장 계약",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "3월 11일",
+   "system": "",
+   "owner": "조O민",
+   "prev": "조O민",
+   "fund": "IL센터지원사업, 활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-20",
+   "title": "DAUM 메일 사용료",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "5월 7일",
+   "system": "",
+   "owner": "노O숙",
+   "prev": "노O숙",
+   "fund": "활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-21",
+   "title": "법인 교통카드 연 관리비",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "7월 3일",
+   "system": "",
+   "owner": "김O원",
+   "prev": "조O민",
+   "fund": "활동지원사업, 운영",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-22",
+   "title": "비즈폼",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "8월 9일",
+   "system": "",
+   "owner": "최O연",
+   "prev": "최O연",
+   "fund": "활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-23",
+   "title": "미리캔버스",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "8월 12일",
+   "system": "",
+   "owner": "최O연",
+   "prev": "최O연",
+   "fund": "활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-24",
+   "title": "chat GPT",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "2024. 8. 2 ~ 2025. 8. 1",
+   "system": "",
+   "owner": "신입",
+   "prev": "신입",
+   "fund": "운영, 활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-25",
+   "title": "Adobe",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "2025년 6월",
+   "system": "",
+   "owner": "신입",
+   "prev": "신입",
+   "fund": "활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-26",
+   "title": "Claude",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "2025년 1월 ~ 2025년 12월",
+   "system": "",
+   "owner": "신입",
+   "prev": "신입",
+   "fund": "활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-boheom-27",
+   "title": "인증서관리",
+   "cat": "보험·구독 만기",
+   "detail": "",
+   "due": "4월 4일",
+   "system": "",
+   "owner": "김O원",
+   "prev": "조O민",
+   "fund": "활동지원사업",
+   "note": "",
+   "source": "보험 및 이용권 시트",
+   "status": "예정"
+  },
+  {
+   "id": "e-extra-0",
+   "title": "구로구청 지도점검 (장애인활동지원)",
+   "cat": "지도점검",
+   "detail": "",
+   "due": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "연 1회 통상. 수검 시점·범위 구청 공문으로 통보. 사전 준비자료 목록 확보 필요",
+   "source": "직접 입력 — 원본 엑셀에 없음",
+   "status": "확인필요"
+  },
+  {
+   "id": "e-extra-1",
+   "title": "구로구청 지도점검 (중증장애인자립생활센터)",
+   "cat": "지도점검",
+   "detail": "",
+   "due": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "보조금 집행·증빙 중심. 예·결산 및 정산보고 자료와 연동",
+   "source": "직접 입력 — 원본 엑셀에 없음",
+   "status": "확인필요"
+  },
+  {
+   "id": "e-extra-2",
+   "title": "장애인활동지원기관 평가",
+   "cat": "평가",
+   "detail": "",
+   "due": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "PAS 평가 업무 — 사회서비스실 전원 참여. 주기·차수 확인 필요",
+   "source": "직접 입력 — 원본 엑셀에 없음",
+   "status": "확인필요"
+  },
+  {
+   "id": "e-extra-3",
+   "title": "자립생활센터 운영 평가",
+   "cat": "평가",
+   "detail": "",
+   "due": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "시·구 주관 여부 및 주기 확인 필요",
+   "source": "직접 입력 — 원본 엑셀에 없음",
+   "status": "확인필요"
+  },
+  {
+   "id": "e-extra-4",
+   "title": "보조금 정산검사 · 외부 회계감사",
+   "cat": "점검",
+   "detail": "",
+   "due": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "결산(3월 31일)과 연동. 감사 지적사항 이월분 확인",
+   "source": "직접 입력 — 원본 엑셀에 없음",
+   "status": "확인필요"
+  },
+  {
+   "id": "e-extra-5",
+   "title": "재물조사",
+   "cat": "내부점검",
+   "detail": "",
+   "due": "연 1회",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "비품관리 담당이 수행",
+   "source": "직접 입력 — 원본 엑셀에 없음",
+   "status": "예정"
+  },
+  {
+   "id": "e-extra-6",
+   "title": "근무평정",
+   "cat": "내부점검",
+   "detail": "",
+   "due": "연 1회",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "수습직원은 수습평가로 대체",
+   "source": "직접 입력 — 원본 엑셀에 없음",
+   "status": "예정"
+  },
+  {
+   "id": "e-extra-7",
+   "title": "운영위원회",
+   "cat": "회의",
+   "detail": "",
+   "due": "분기별 1회",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "자료집 제작·안건정리·회의록",
+   "source": "직접 입력 — 원본 엑셀에 없음",
+   "status": "예정"
+  },
+  {
+   "id": "e-extra-8",
+   "title": "총회",
+   "cat": "회의",
+   "detail": "",
+   "due": "연 1회 이상",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "자료집 제작·안건정리·회의록",
+   "source": "직접 입력 — 원본 엑셀에 없음",
+   "status": "예정"
+  },
+  {
+   "id": "e-extra-9",
+   "title": "사업체노동력조사 (고용노동부)",
+   "cat": "신고·보고",
+   "detail": "",
+   "due": "매월 12일까지",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "매월 12일까지 제출",
+   "source": "직접 입력 — 원본 엑셀에 없음",
+   "status": "예정"
+  },
+  {
+   "id": "e-oc-q",
+   "title": "운영위원회 (분기별)",
+   "cat": "회의",
+   "detail": "",
+   "due": "분기별 1회 (3·6·9·12월)",
+   "rule": {
+    "kind": "months",
+    "months": [
+     3,
+     6,
+     9,
+     12
+    ],
+    "d": 0
+   },
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "김O원",
+   "prev": "",
+   "fund": "",
+   "note": "자료집 제작 · 안건정리 · 회의록. 개최 2주 전 안건 취합 시작",
+   "source": "직접 입력",
+   "status": "예정"
+  },
+  {
+   "id": "e-pas-oc",
+   "title": "활동지원사업 운영위원회",
+   "cat": "회의",
+   "detail": "",
+   "due": "반기 1회 (6·12월)",
+   "rule": {
+    "kind": "months",
+    "months": [
+     6,
+     12
+    ],
+    "d": 0
+   },
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "담당 공무원·활동지원사 대표·수급자 대표 필수 참석. 개최 주기 확인 필요",
+   "source": "직접 입력",
+   "status": "예정"
+  },
+  {
+   "id": "e-chonghoe",
+   "title": "정기총회",
+   "cat": "회의",
+   "detail": "",
+   "due": "2월 중 (연 1회 이상)",
+   "rule": {
+    "kind": "yearly",
+    "m": 2,
+    "d": 0
+   },
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "김O원",
+   "prev": "",
+   "fund": "",
+   "note": "자료집 제작 · 안건정리 · 회의록. 결산(3월 31일) 전에 개최",
+   "source": "직접 입력",
+   "status": "예정"
+  },
+  {
+   "id": "e-nosa",
+   "title": "노사협의회",
+   "cat": "회의",
+   "detail": "",
+   "due": "분기별 1회",
+   "rule": {
+    "kind": "months",
+    "months": [
+     3,
+     6,
+     9,
+     12
+    ],
+    "d": 0
+   },
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "근로자·사용자 각 3명. 고충처리위원회 겸함",
+   "source": "직접 입력",
+   "status": "예정"
+  },
+  {
+   "id": "e-term-daepyo",
+   "title": "대표·감사 임기 만료",
+   "cat": "임기",
+   "detail": "",
+   "due": "2026. 2. 28. / 2. 29.",
+   "rule": {
+    "kind": "yearly",
+    "m": 2,
+    "d": 28
+   },
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "김O원",
+   "prev": "",
+   "fund": "",
+   "note": "대표 이O수(3년) · 감사 김O수(2년) — 이미 만료. 연임·재선출 절차 확인 필요",
+   "source": "직접 입력",
+   "status": "예정",
+   "basis": "정관"
+  },
+  {
+   "id": "e-term-unyeong",
+   "title": "운영위원 임기 만료",
+   "cat": "임기",
+   "detail": "",
+   "due": "2026. 2. 28.",
+   "rule": {
+    "kind": "yearly",
+    "m": 2,
+    "d": 28
+   },
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "김O원",
+   "prev": "",
+   "fund": "",
+   "note": "임기 3년 만료 — 이미 도과. 재구성 필요 (대표 포함 7~11인)",
+   "source": "직접 입력",
+   "status": "예정",
+   "basis": "정관"
+  },
+  {
+   "id": "e-term-pas",
+   "title": "활동지원사업 운영위원 임기 만료",
+   "cat": "임기",
+   "detail": "",
+   "due": "2027. 2. 28.",
+   "rule": {
+    "kind": "yearly",
+    "m": 2,
+    "d": 28
+   },
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "임기 2년 · 연임 1회 가능",
+   "source": "직접 입력",
+   "status": "예정",
+   "basis": "장애인활동지원 사업 지침"
+  },
+  {
+   "id": "e-edu-inkwon",
+   "title": "인권교육",
+   "cat": "의무교육",
+   "detail": "",
+   "due": "연 1회",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "이수 기한·시수는 해당 연도 지침으로 확인",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "전 직원",
+   "basis": "장애인복지법",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-seong",
+   "title": "성희롱 예방교육",
+   "cat": "의무교육",
+   "detail": "",
+   "due": "연 1회",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "이수 기한·시수는 해당 연도 지침으로 확인",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "전 직원",
+   "basis": "양성평등기본법",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-seongpok",
+   "title": "성폭력·성매매 예방교육",
+   "cat": "의무교육",
+   "detail": "",
+   "due": "연 1회",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "이수 기한·시수는 해당 연도 지침으로 확인",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "전 직원",
+   "basis": "성폭력방지법 / 성매매방지법",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-gajeong",
+   "title": "가정폭력 예방교육",
+   "cat": "의무교육",
+   "detail": "",
+   "due": "연 1회",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "이수 기한·시수는 해당 연도 지침으로 확인",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "전 직원",
+   "basis": "가정폭력방지법",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-insik",
+   "title": "장애인식개선교육",
+   "cat": "의무교육",
+   "detail": "",
+   "due": "연 1회",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "이수 기한·시수는 해당 연도 지침으로 확인",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "전 직원",
+   "basis": "장애인고용촉진 및 직업재활법",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-privacy",
+   "title": "개인정보보호교육",
+   "cat": "의무교육",
+   "detail": "",
+   "due": "연 1회",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "이수 기한·시수는 해당 연도 지침으로 확인",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "전 직원",
+   "basis": "개인정보 보호법",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-hakdae",
+   "title": "장애인학대 신고의무자 교육",
+   "cat": "의무교육",
+   "detail": "",
+   "due": "연 1회",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "이수 기한·시수는 해당 연도 지침으로 확인",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "전 직원",
+   "basis": "장애인복지법",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-adong",
+   "title": "아동학대 신고의무자 교육",
+   "cat": "의무교육",
+   "detail": "",
+   "due": "연 1회",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "이수 기한·시수는 해당 연도 지침으로 확인",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "해당자",
+   "basis": "아동학대처벌법",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-gingeup",
+   "title": "긴급복지 신고의무자 교육",
+   "cat": "의무교육",
+   "detail": "",
+   "due": "연 1회",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "이수 기한·시수는 해당 연도 지침으로 확인",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "전 직원",
+   "basis": "긴급복지지원법",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-anjeon",
+   "title": "산업안전보건교육",
+   "cat": "의무교육",
+   "detail": "",
+   "due": "분기별",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "이수 기한·시수는 해당 연도 지침으로 확인",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "전 직원",
+   "basis": "산업안전보건법",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-toejik",
+   "title": "퇴직연금 교육",
+   "cat": "의무교육",
+   "detail": "",
+   "due": "연 1회",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "이수 기한·시수는 해당 연도 지침으로 확인",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "전 직원",
+   "basis": "근로자퇴직급여보장법",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-pas",
+   "title": "활동지원사 보수교육",
+   "cat": "교육",
+   "detail": "",
+   "due": "연 1회 이상",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "활동지원사 대상. 이수 현황 관리",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "활동지원사",
+   "basis": "장애인활동지원 사업 지침",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-jeondam",
+   "title": "전담인력 직무교육",
+   "cat": "교육",
+   "detail": "",
+   "due": "연 1회",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "PAS 전담인력 대상",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "PAS 전담인력",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-edu-jikwon",
+   "title": "사무국 직원교육",
+   "cat": "교육",
+   "detail": "",
+   "due": "수시",
+   "rule": null,
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "노O숙",
+   "prev": "",
+   "fund": "",
+   "note": "직원교육 관리 담당",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "사무국",
+   "completed": [],
+   "certPath": ""
+  },
+  {
+   "id": "e-geomjin",
+   "title": "직장인 건강검진",
+   "cat": "교육",
+   "detail": "",
+   "due": "연 1회 (11월까지)",
+   "rule": {
+    "kind": "yearly",
+    "m": 11,
+    "d": 0
+   },
+   "date": "",
+   "end": "",
+   "system": "",
+   "owner": "",
+   "prev": "",
+   "fund": "",
+   "note": "미수검 시 과태료. 대상자 명단 관리 필요",
+   "source": "직접 입력",
+   "status": "예정",
+   "target": "전 직원",
+   "completed": [],
+   "certPath": ""
+  }
+ ],
+ "docs": [
+  {
+   "id": "d-0",
+   "title": "정관",
+   "kind": "규정",
+   "scope": "법인 전체",
+   "note": "대표·감사·운영위원 임기와 구성 근거",
+   "path": "",
+   "checked": false
+  },
+  {
+   "id": "d-1",
+   "title": "취업규칙",
+   "kind": "규정",
+   "scope": "전 직원",
+   "note": "내규 관리 항목 — 총무 공통업무",
+   "path": "",
+   "checked": false
+  },
+  {
+   "id": "d-2",
+   "title": "인사위원회 운영규정",
+   "kind": "규정",
+   "scope": "인사",
+   "note": "인사위원 구성 근거 (대표·소장·사무국장·선임팀장)",
+   "path": "",
+   "checked": false
+  },
+  {
+   "id": "d-3",
+   "title": "노사협의회 운영규정",
+   "kind": "규정",
+   "scope": "노사",
+   "note": "근로자대표 3명 / 사용자대표 3명, 임기 3년",
+   "path": "",
+   "checked": false
+  },
+  {
+   "id": "d-4",
+   "title": "활동지원사업 운영규정",
+   "kind": "규정",
+   "scope": "활동지원",
+   "note": "민원처리위원회 구성 근거",
+   "path": "",
+   "checked": false
+  },
+  {
+   "id": "d-5",
+   "title": "장애인활동지원 사업 지침",
+   "kind": "지침",
+   "scope": "활동지원",
+   "note": "활동지원사업 운영위원 구성 요건 (담당 공무원·활동지원사 대표·수급자 대표 필수)",
+   "path": "",
+   "checked": false
+  },
+  {
+   "id": "d-6",
+   "title": "장애인활동지원 급여제공 지침",
+   "kind": "지침",
+   "scope": "활동지원",
+   "note": "고충처리위원회 구성 근거",
+   "path": "",
+   "checked": false
+  },
+  {
+   "id": "d-7",
+   "title": "사회복지법인·시설 재무회계 규칙",
+   "kind": "지침",
+   "scope": "회계",
+   "note": "예·결산, 후원금 관리, 정산 근거",
+   "path": "",
+   "checked": false
+  },
+  {
+   "id": "d-8",
+   "title": "보조금 교부·정산 지침 (구로구)",
+   "kind": "지침",
+   "scope": "회계",
+   "note": "민간단체보조금·시설운영 집행 기준",
+   "path": "",
+   "checked": false
+  },
+  {
+   "id": "d-9",
+   "title": "홈페이지 유지보수 계약서 (㈜웹모아)",
+   "kind": "계약",
+   "scope": "전산",
+   "note": "2018-08-24 제작계약. 제13조4항 개발완료 후 수정 유료, 제20조 제작계약 종료·현재는 연간 유지보수",
+   "path": "",
+   "checked": false
+  },
+  {
+   "id": "d-10",
+   "title": "업무 매뉴얼 — 장블랑제리 후원품 수령증",
+   "kind": "매뉴얼",
+   "scope": "후원",
+   "note": "클로드 스킬 jangblanc-donation-workflow 에 절차 고정",
+   "path": "",
+   "checked": false
+  },
+  {
+   "id": "d-11",
+   "title": "업무 매뉴얼 — 구로 당번표 웹앱",
+   "kind": "매뉴얼",
+   "scope": "총무",
+   "note": "배포 브랜치 main2 / localStorage 병합 주의",
+   "path": "https://kittycong.github.io/guro_dangbun/",
+   "checked": false
+  },
+  {
+   "id": "d-docsys",
+   "title": "문서생성 시스템 (출장·기안·수령증·회의록·휴가·운영위)",
+   "kind": "매뉴얼",
+   "scope": "사무국 공통",
+   "note": "출장신청서·복명서, 물품구매/고정거래 내부기안, 산출기초조사서, 후원물품 수령증, 인사회의록, 휴가신청, 운영위원회 안건, 장블랑제리 합본 생성. 작성 → 결재중 → 결재완료 상태 관리와 엑셀 다운로드·구글시트 전송 지원.",
+   "path": "https://chulchang-munseo.vercel.app/",
+   "checked": false
+  }
+ ],
+ "contacts": [
+  {
+   "id": "c-0",
+   "name": "센터 대표번호",
+   "cat": "내부",
+   "person": "사무국",
+   "tel": "(02)857-9501",
+   "email": "grcil@daum.net",
+   "note": "전송 (02)857-9502 · 주소 (08298) 서울특별시 구로구 가마산로27길 14, 8층(구로동)",
+   "task": "",
+   "emergency": true,
+   "fav": true
+  },
+  {
+   "id": "c-1",
+   "name": "건물 관리사무소",
+   "cat": "시설",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "정전·누수·엘리베이터·출입 통제. 번호 확인 필요",
+   "task": "",
+   "emergency": true,
+   "fav": false
+  },
+  {
+   "id": "c-119",
+   "name": "소방·구급",
+   "cat": "응급",
+   "person": "",
+   "tel": "119",
+   "email": "",
+   "note": "이용자·활동지원사 응급상황. 사고 발생 시 센터 보고 절차 함께 확인",
+   "task": "",
+   "emergency": true,
+   "fav": false
+  },
+  {
+   "id": "c-112",
+   "name": "경찰",
+   "cat": "응급",
+   "person": "",
+   "tel": "112",
+   "email": "",
+   "note": "범죄·안전 신고",
+   "task": "",
+   "emergency": true,
+   "fav": false
+  },
+  {
+   "id": "c-3",
+   "name": "㈜웹모아",
+   "cat": "유지보수",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "홈페이지 grcil.kr 호스팅·유지보수. 게시물 등록·수정은 WIMS 게시판으로 요청. 도메인·유지보수 연장 11월 28일",
+   "task": "o-homepage",
+   "emergency": true,
+   "fav": true
+  },
+  {
+   "id": "c-4",
+   "name": "진우정보시스템",
+   "cat": "유지보수",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "활동지원사 급여시스템(진우). 연장 계약 3월 11일",
+   "task": "",
+   "emergency": true,
+   "fav": true
+  },
+  {
+   "id": "c-5",
+   "name": "보탬e 헬프데스크",
+   "cat": "시스템",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "보조금 집행·정산 시스템. 사무국직원 급여지급·회계 처리에 사용",
+   "task": "i-geupyeo",
+   "emergency": false,
+   "fav": true
+  },
+  {
+   "id": "c-6",
+   "name": "홈택스",
+   "cat": "시스템",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "원천세·지방소득세(매월 10일), 기타소득 지급명세서(2월 말), 연말정산(3월 10일)",
+   "task": "",
+   "emergency": false,
+   "fav": true
+  },
+  {
+   "id": "c-7",
+   "name": "고용산재토탈서비스",
+   "cat": "시스템",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "사회보험 취득·상실 신고(매월 14일까지), 보수총액신고(3월 14일)",
+   "task": "i-saboheom-singo",
+   "emergency": false,
+   "fav": true
+  },
+  {
+   "id": "c-8",
+   "name": "공동인증서 발급기관",
+   "cat": "시스템",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "만기 4월 4일. 놓치면 보탬e·홈택스·인터넷뱅킹 전부 막힘",
+   "task": "i-injeungseo",
+   "emergency": true,
+   "fav": true
+  },
+  {
+   "id": "c-9",
+   "name": "구로구청 장애인복지과",
+   "cat": "관공서",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "보조금 교부·정산, 지도점검, 처우개선비, 장애인복지기금",
+   "task": "k-jungjeung-acc",
+   "emergency": true,
+   "fav": true
+  },
+  {
+   "id": "c-10",
+   "name": "국민건강보험공단",
+   "cat": "관공서",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "사회보험 관련",
+   "task": "",
+   "emergency": false,
+   "fav": false
+  },
+  {
+   "id": "c-11",
+   "name": "국민연금공단",
+   "cat": "관공서",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "사회보험 관련",
+   "task": "",
+   "emergency": false,
+   "fav": false
+  },
+  {
+   "id": "c-12",
+   "name": "한국장애인고용공단",
+   "cat": "관공서",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "장애인고용부담금·고용현황 신고 1월 31일 (E신고)",
+   "task": "c-singo",
+   "emergency": false,
+   "fav": false
+  },
+  {
+   "id": "c-13",
+   "name": "고용노동부",
+   "cat": "관공서",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "사업체노동력조사 매월 12일까지",
+   "task": "",
+   "emergency": false,
+   "fav": false
+  },
+  {
+   "id": "c-14",
+   "name": "기업은행",
+   "cat": "금융",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "퇴직연금 부담금 이체(매월 14일), 지급 신청(매월 16일), 인터넷뱅킹",
+   "task": "",
+   "emergency": false,
+   "fav": true
+  },
+  {
+   "id": "c-15",
+   "name": "한국사회복지공제회",
+   "cat": "보험",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "복지시설 종합안전배상공제(4월 15일), 단체상해공제(11월 9일)",
+   "task": "",
+   "emergency": false,
+   "fav": false
+  },
+  {
+   "id": "c-16",
+   "name": "SGI서울보증",
+   "cat": "보험",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "신원보증보험 — 자립생활주택 코디, 사무국 회계담당·간부(11월 28일)",
+   "task": "",
+   "emergency": false,
+   "fav": false
+  },
+  {
+   "id": "c-17",
+   "name": "메리츠화재",
+   "cat": "보험",
+   "person": "",
+   "tel": "[연락처 비공개]",
+   "email": "",
+   "note": "화재보험 — 사무실 8층(12/30)·5층(7/22), 자립생활주택 가형(12/19)·다형1(7/3)·다형2(9/12)",
+   "task": "",
+   "emergency": false,
+   "fav": true
+  },
+  {
+   "id": "c-18",
+   "name": "장블랑제리 (해피피플)",
+   "cat": "거래처",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "빵 후원. 매월 거래명세 검증 후 물품수령증 발급·날인",
+   "task": "k-bread",
+   "emergency": false,
+   "fav": true
+  },
+  {
+   "id": "c-19",
+   "name": "구로시민센터",
+   "cat": "거래처",
+   "person": "",
+   "tel": "",
+   "email": "",
+   "note": "후원 CMS 자동이체 신청 관리",
+   "task": "o-huwon-cms",
+   "emergency": false,
+   "fav": false
+  }
+ ],
+ "subcat": {
+  "총무": {
+   "문서·공문": [],
+   "규정·계약": [],
+   "회의체": [],
+   "비품·자산": [],
+   "전산·장비": [],
+   "차량": [],
+   "계정·카드": [],
+   "후원·상품권": [],
+   "직원지원": [],
+   "사업·공모": []
+  }
+ },
+ "committees": [
+  {
+   "id": "cm-daepyo",
+   "name": "대표 · 감사",
+   "doc": "정관",
+   "rule": "대표 임기 3년 · 감사 임기 2년 · 연임 가능",
+   "note": "",
+   "members": [
     {
-      "id": "cm-daepyo",
-      "name": "대표 · 감사",
-      "doc": "정관",
-      "rule": "대표 임기 3년 · 감사 임기 2년 · 연임 가능",
-      "note": "",
-      "members": [
-        {
-          "name": "이O수",
-          "role": "대표",
-          "kind": "선출",
-          "start": "2023-03-01",
-          "end": "2026-02-28",
-          "renew": "가능"
-        },
-        {
-          "name": "김O수",
-          "role": "감사",
-          "kind": "선출",
-          "start": "2024-03-01",
-          "end": "2026-02-29",
-          "renew": "가능"
-        }
-      ]
+     "name": "이O수",
+     "role": "대표",
+     "kind": "선출",
+     "start": "2023-03-01",
+     "end": "2026-02-28",
+     "renew": "가능"
     },
     {
-      "id": "cm-unyeong",
-      "name": "운영위원회",
-      "doc": "정관",
-      "rule": "대표 포함 7인 이상 11인 이하 · 임기 3년 · 연임 가능",
-      "note": "분기별 1회 개최. 자료집 제작·안건정리·회의록 작성",
-      "members": [
-        {
-          "name": "",
-          "role": "운영위원",
-          "kind": "위촉",
-          "start": "2023-02-28",
-          "end": "2026-02-28",
-          "renew": "가능"
-        }
-      ]
-    },
-    {
-      "id": "cm-pas",
-      "name": "활동지원사업 운영위원회",
-      "doc": "장애인활동지원 사업 지침",
-      "rule": "위원장 포함 5인 이상 10인 이하 · 임기 2년 · 연임 한 차례 가능",
-      "note": "필수 구성원 — 장애인활동지원 담당 공무원 · 활동지원사 대표 · 수급자 대표",
-      "members": [
-        {
-          "name": "",
-          "role": "담당 공무원 (필수)",
-          "kind": "당연직",
-          "start": "2025-03-01",
-          "end": "2027-02-28",
-          "renew": "1회"
-        },
-        {
-          "name": "",
-          "role": "활동지원사 대표 (필수)",
-          "kind": "위촉",
-          "start": "2025-03-01",
-          "end": "2027-02-28",
-          "renew": "1회"
-        },
-        {
-          "name": "",
-          "role": "수급자 대표 (필수)",
-          "kind": "위촉",
-          "start": "2025-03-01",
-          "end": "2027-02-28",
-          "renew": "1회"
-        }
-      ]
-    },
-    {
-      "id": "cm-insa",
-      "name": "인사위원회",
-      "doc": "인사위원회 운영규정",
-      "rule": "당연직 외 대표가 임명한 자는 임기 3년",
-      "note": "",
-      "members": [
-        {
-          "name": "이O수",
-          "role": "위원",
-          "kind": "임명",
-          "start": "",
-          "end": "",
-          "renew": "-"
-        },
-        {
-          "name": "이O희",
-          "role": "위원",
-          "kind": "임명",
-          "start": "",
-          "end": "",
-          "renew": "-"
-        },
-        {
-          "name": "",
-          "role": "사무국장",
-          "kind": "당연직",
-          "start": "",
-          "end": "",
-          "renew": "-"
-        },
-        {
-          "name": "",
-          "role": "선임팀장",
-          "kind": "당연직",
-          "start": "",
-          "end": "",
-          "renew": "-"
-        }
-      ]
-    },
-    {
-      "id": "cm-gochung",
-      "name": "고충처리위원회",
-      "doc": "장애인활동지원 급여제공 지침",
-      "rule": "본 직무의 임기와 같이 함",
-      "note": "노사협의회가 수행. 어려운 경우 운영위원회 활동보조인대표위원과 사무국장으로 구성",
-      "members": [
-        {
-          "name": "",
-          "role": "노사협의회 위원 중 근로자측",
-          "kind": "당연직",
-          "start": "",
-          "end": "",
-          "renew": "-"
-        },
-        {
-          "name": "",
-          "role": "노사협의회 위원 중 사용자측",
-          "kind": "당연직",
-          "start": "",
-          "end": "",
-          "renew": "-"
-        }
-      ]
-    },
-    {
-      "id": "cm-minwon",
-      "name": "민원처리위원회",
-      "doc": "활동지원사업 운영규정",
-      "rule": "",
-      "note": "",
-      "members": [
-        {
-          "name": "",
-          "role": "사무국장",
-          "kind": "당연직",
-          "start": "",
-          "end": "",
-          "renew": "-"
-        },
-        {
-          "name": "",
-          "role": "수급자대표 운영위원",
-          "kind": "당연직",
-          "start": "",
-          "end": "",
-          "renew": "-"
-        },
-        {
-          "name": "",
-          "role": "활동보조인대표 운영위원",
-          "kind": "당연직",
-          "start": "",
-          "end": "",
-          "renew": "-"
-        }
-      ]
-    },
-    {
-      "id": "cm-nosa",
-      "name": "노사협의회",
-      "doc": "노사협의회 운영규정",
-      "rule": "근로자대표 3명 · 사용자대표 3명(센터장 포함) · 임기 3년 · 연임 가능",
-      "note": "고충처리위원회를 겸함",
-      "members": [
-        {
-          "name": "",
-          "role": "근로자대표 (3명)",
-          "kind": "선출",
-          "start": "",
-          "end": "",
-          "renew": "가능"
-        },
-        {
-          "name": "",
-          "role": "사용자대표 (3명)",
-          "kind": "당연직",
-          "start": "",
-          "end": "",
-          "renew": "가능"
-        }
-      ]
+     "name": "김O수",
+     "role": "감사",
+     "kind": "선출",
+     "start": "2024-03-01",
+     "end": "2026-02-29",
+     "renew": "가능"
     }
-  ]
+   ]
+  },
+  {
+   "id": "cm-unyeong",
+   "name": "운영위원회",
+   "doc": "정관",
+   "rule": "대표 포함 7인 이상 11인 이하 · 임기 3년 · 연임 가능",
+   "note": "분기별 1회 개최. 자료집 제작·안건정리·회의록 작성",
+   "members": [
+    {
+     "name": "",
+     "role": "운영위원",
+     "kind": "위촉",
+     "start": "2023-02-28",
+     "end": "2026-02-28",
+     "renew": "가능"
+    }
+   ]
+  },
+  {
+   "id": "cm-pas",
+   "name": "활동지원사업 운영위원회",
+   "doc": "장애인활동지원 사업 지침",
+   "rule": "위원장 포함 5인 이상 10인 이하 · 임기 2년 · 연임 한 차례 가능",
+   "note": "필수 구성원 — 장애인활동지원 담당 공무원 · 활동지원사 대표 · 수급자 대표",
+   "members": [
+    {
+     "name": "",
+     "role": "담당 공무원 (필수)",
+     "kind": "당연직",
+     "start": "2025-03-01",
+     "end": "2027-02-28",
+     "renew": "1회"
+    },
+    {
+     "name": "",
+     "role": "활동지원사 대표 (필수)",
+     "kind": "위촉",
+     "start": "2025-03-01",
+     "end": "2027-02-28",
+     "renew": "1회"
+    },
+    {
+     "name": "",
+     "role": "수급자 대표 (필수)",
+     "kind": "위촉",
+     "start": "2025-03-01",
+     "end": "2027-02-28",
+     "renew": "1회"
+    }
+   ]
+  },
+  {
+   "id": "cm-insa",
+   "name": "인사위원회",
+   "doc": "인사위원회 운영규정",
+   "rule": "당연직 외 대표가 임명한 자는 임기 3년",
+   "note": "",
+   "members": [
+    {
+     "name": "이O수",
+     "role": "위원",
+     "kind": "임명",
+     "start": "",
+     "end": "",
+     "renew": "-"
+    },
+    {
+     "name": "이O희",
+     "role": "위원",
+     "kind": "임명",
+     "start": "",
+     "end": "",
+     "renew": "-"
+    },
+    {
+     "name": "",
+     "role": "사무국장",
+     "kind": "당연직",
+     "start": "",
+     "end": "",
+     "renew": "-"
+    },
+    {
+     "name": "",
+     "role": "선임팀장",
+     "kind": "당연직",
+     "start": "",
+     "end": "",
+     "renew": "-"
+    }
+   ]
+  },
+  {
+   "id": "cm-gochung",
+   "name": "고충처리위원회",
+   "doc": "장애인활동지원 급여제공 지침",
+   "rule": "본 직무의 임기와 같이 함",
+   "note": "노사협의회가 수행. 어려운 경우 운영위원회 활동보조인대표위원과 사무국장으로 구성",
+   "members": [
+    {
+     "name": "",
+     "role": "노사협의회 위원 중 근로자측",
+     "kind": "당연직",
+     "start": "",
+     "end": "",
+     "renew": "-"
+    },
+    {
+     "name": "",
+     "role": "노사협의회 위원 중 사용자측",
+     "kind": "당연직",
+     "start": "",
+     "end": "",
+     "renew": "-"
+    }
+   ]
+  },
+  {
+   "id": "cm-minwon",
+   "name": "민원처리위원회",
+   "doc": "활동지원사업 운영규정",
+   "rule": "",
+   "note": "",
+   "members": [
+    {
+     "name": "",
+     "role": "사무국장",
+     "kind": "당연직",
+     "start": "",
+     "end": "",
+     "renew": "-"
+    },
+    {
+     "name": "",
+     "role": "수급자대표 운영위원",
+     "kind": "당연직",
+     "start": "",
+     "end": "",
+     "renew": "-"
+    },
+    {
+     "name": "",
+     "role": "활동보조인대표 운영위원",
+     "kind": "당연직",
+     "start": "",
+     "end": "",
+     "renew": "-"
+    }
+   ]
+  },
+  {
+   "id": "cm-nosa",
+   "name": "노사협의회",
+   "doc": "노사협의회 운영규정",
+   "rule": "근로자대표 3명 · 사용자대표 3명(센터장 포함) · 임기 3년 · 연임 가능",
+   "note": "고충처리위원회를 겸함",
+   "members": [
+    {
+     "name": "",
+     "role": "근로자대표 (3명)",
+     "kind": "선출",
+     "start": "",
+     "end": "",
+     "renew": "가능"
+    },
+    {
+     "name": "",
+     "role": "사용자대표 (3명)",
+     "kind": "당연직",
+     "start": "",
+     "end": "",
+     "renew": "가능"
+    }
+   ]
+  }
+ ]
 };
 const KEY = "eopmu_bunjang_pub_v2";
 // 인수인계 진행 상태 기본값 — 구분에서 유도, 이후 사용자가 편집
 const DEFSTAT = {keep:"진행중", out:"인계중", in:"인수중", common:"진행중", tbd:"추가확인", other:"미착수"};
-let DB = load(), view = "dash", filter = "all", query = "", sortKey = "", sortDir = 1, editing = null;
+let DB = load(), view = "cal", filter = "all", query = "", sortKey = "", sortDir = 1, editing = null;
 
 function normalize(db){
   (db.tasks||[]).forEach(t=>{
@@ -4903,23 +5086,36 @@ function termCell(mb){
 function viewCmt(){
   let list = CMTS();
   if(query){ const q=query.toLowerCase(); list = list.filter(c=>JSON.stringify(c).toLowerCase().indexOf(q)>=0); }
-  if(!list.length) return '<div class="empty">위원회 없음</div>';
+  const toolbar = '<div class="docbar">'
+    + '<b>위원회 구성</b>'
+    + '<button data-cmtadd>＋ 위원회 추가</button>'
+    + '<span class="spacer"></span>'
+    + '<button data-cmtxlsxexport>엑셀 내보내기</button>'
+    + '<button data-cmtxlsximport>엑셀 가져오기</button>'
+    + '<button data-cmthwpxexport>한글(HWPX) 내보내기</button>'
+    + '</div>';
+  if(!list.length) return toolbar + '<div class="empty">위원회 없음</div>';
   const over = CMTS().reduce((n,c)=>n + c.members.filter(m=>m.end && dleft(m.end) < 0).length, 0);
-  return (over ? '<div class="sos"><b>임기 만료 ' + over + '석 — 재구성·연임 절차 확인</b>'
-          + '<div class="none" style="font-style:normal">만료된 위원으로 의결하면 회의 효력이 문제될 수 있습니다.</div></div>' : '')
-    + list.map(c=>'<div class="cmt"><h3>' + esc(c.name)
-      + '<small>근거 ' + esc(c.doc) + ' · ' + c.members.length + '석</small></h3>'
+  return toolbar
+    + (over ? '<div class="sos"><b>임기 만료 ' + over + '석 — 재구성·연임 절차 확인</b>'
+          + '<div class="none" style="font-style:normal">만료된 위원으로 의결하면 회의 효력이 문제될 수 있습니다. 실제로 바뀌었으면 아래 표에서 바로 고치세요.</div></div>' : '')
+    + list.map((c, ci)=>'<div class="cmt"><h3>' + esc(c.name)
+      + '<small>근거 ' + esc(c.doc) + ' · ' + c.members.length + '석</small>'
+      + '<span class="gsel" data-cmtedit="'+ci+'">위원회 편집</span>'
+      + '<span class="gsel" data-mbradd="'+ci+'">＋ 위원 추가</span>'
+      + '</h3>'
       + (c.rule ? '<div class="rule"><b>구성 기준</b> ' + esc(c.rule) + '</div>' : '')
       + (c.note ? '<div class="rule">' + esc(c.note) + '</div>' : '')
       + '<div class="tblwrap" style="border:none;margin-top:9px"><table><thead><tr>'
-      + '<th>직위 · 역할</th><th>성명</th><th>구분</th><th>임기</th><th>연임</th>'
+      + '<th>직위 · 역할</th><th>성명</th><th>구분</th><th>임기</th><th>연임</th><th></th>'
       + '</tr></thead><tbody>'
-      + c.members.map(m=>'<tr>'
+      + c.members.map((m, mi)=>'<tr>'
         + '<td>' + esc(m.role) + '</td>'
         + '<td>' + (m.name ? esc(m.name) : '<span class="vacant2">미기재</span>') + '</td>'
         + '<td><small>' + esc(m.kind) + '</small></td>'
         + '<td>' + termCell(m) + '</td>'
-        + '<td><small>' + esc(m.renew||"") + '</small></td></tr>').join('')
+        + '<td><small>' + esc(m.renew||"") + '</small></td>'
+        + '<td><button data-mbredit="'+ci+'|'+mi+'" style="padding:3px 8px;font-size:11.5px">편집</button></td></tr>').join('')
       + '</tbody></table></div></div>').join('');
 }
 
@@ -5082,45 +5278,76 @@ function agenda(){
 }
 const evChip = a => '<div class="ev" data-k="'+esc(a.k)+'" data-'+(a.ref==="task"?"task":"event")+'="'+a.id+'" title="'+esc(a.title+' — '+a.sub)+'">'+esc(a.title)+'</div>';
 
-function viewCalendar(){
-  const every = agenda().filter(a=> !whoFilter ||
-    (a.ref==="task" ? taskOfWho(byId(a.id)||{}, whoFilter) : splitOwner(a.owner).indexOf(whoFilter)>=0));
-  const all = every.filter(passWho);
-  const first = new Date(calY, calM-1, 1).getDay();
-  const days = new Date(calY, calM, 0).getDate();
-  const now = new Date(), isNow = now.getFullYear()===calY && now.getMonth()+1===calM;
-  const onDay = d => all.filter(a=>
-      (a.p.kind==="date" && a.p.y===calY && a.p.m===calM && a.p.d===d) ||
-      (a.p.kind==="monthly" && a.p.d===d) ||
-      (a.p.kind==="weekly" && a.p.w===(first+d-1)%7) ||
-      (a.p.kind==="yearly" && a.p.m===calM && (a.p.d===d || (a.p.d===0 && d===1))));
+// 날짜가 토(6)·일(0)요일이면 금요일로 당김 — 회사가 주말 업무가 없어서 주말에 걸리는 건은 항상 직전 금요일에 배치
+function fridayShift(y, m, d){
+  const dt = new Date(y, m-1, d), dow = dt.getDay();
+  if(dow===6) dt.setDate(dt.getDate()-1);
+  else if(dow===0) dt.setDate(dt.getDate()-2);
+  return {y:dt.getFullYear(), m:dt.getMonth()+1, d:dt.getDate()};
+}
+// 월 그리드 하나(요일 헤더 + 날짜 칸) HTML — 패널 재사용을 위해 분리. 주말로 떨어지는 항목은 금요일 칸으로 이동시켜 배치
+function calGridHTML(list, y, m){
+  const first = new Date(y, m-1, 1).getDay();
+  const days = new Date(y, m, 0).getDate();
+  const now = new Date(), isNow = now.getFullYear()===y && now.getMonth()+1===m;
+  const byDay = Array.from({length:days+1}, ()=>[]); // 1..days 사용, 0번은 미사용
+  const place = (a, ty, tm, td) => { if(ty===y && tm===m && td>=1 && td<=days) byDay[td].push(a); };
+  list.forEach(a=>{
+    const p = a.p;
+    if(p.kind==="date"){ const s = fridayShift(p.y, p.m, p.d); place(a, s.y, s.m, s.d); }
+    else if(p.kind==="monthly"){ const s = fridayShift(y, m, p.d); place(a, s.y, s.m, s.d); }
+    else if(p.kind==="yearly"){ const s = fridayShift(y, p.m, p.d||1); place(a, s.y, s.m, s.d); }
+    else if(p.kind==="weekly"){
+      const w = (p.w===0 || p.w===6) ? 5 : p.w; // 매주 토·일 고정 업무는 매주 금요일로 고정 배치
+      for(let d=1; d<=days; d++) if((first+d-1)%7===w) byDay[d].push(a);
+    }
+  });
   let cells = "";
   for(let i=0;i<first;i++) cells += '<div class="cell pad"></div>';
   for(let d=1; d<=days; d++){
     const dow = (first+d-1)%7;
-    const ds = calY+"-"+String(calM).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+    const ds = y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
     cells += '<div class="cell'+(dow===0?' sun':'')+(isNow&&now.getDate()===d?' today':'')+'"'
       + ' data-newev="'+ds+'" title="빈 곳 클릭 → 이 날짜로 일정 추가">'
-      + '<div class="dnum">'+d+'</div>' + onDay(d).map(evChip).join('') + '</div>';
+      + '<div class="dnum">'+d+'</div>' + byDay[d].map(evChip).join('') + '</div>';
   }
-  const daily = all.filter(a=>a.p.kind==="daily");
-  const other = all.filter(a=>a.p.kind==="other");
+  return '<div class="calscroll"><div class="cal">'
+      + ["일","월","화","수","목","금","토"].map((w,i)=>'<div class="dow'+(i===0?' sun':'')+'">'+w+'</div>').join('')
+      + cells + '</div></div>';
+}
+// 캘린더 패널 하나(제목 + 그리드 + 매일/기타 스트립)
+function calPanelHTML(title, list, y, m){
+  const daily = list.filter(a=>a.p.kind==="daily");
+  const other = list.filter(a=>a.p.kind==="other");
   const strip = (t,arr)=> arr.length ? '<div class="strip"><b>'+t+' ('+arr.length+')</b>'+arr.map(evChip).join('')+'</div>' : '';
+  return '<div class="calpanel"><h4 class="calptitle">'+esc(title)+'<small>'+list.length+'건</small></h4>'
+    + calGridHTML(list, y, m)
+    + strip("매일", daily) + strip("날짜 미상 · 확인 필요", other)
+    + '</div>';
+}
+
+function viewCalendar(){
+  const every = agenda().filter(a=> !whoFilter ||
+    (a.ref==="task" ? taskOfWho(byId(a.id)||{}, whoFilter) : splitOwner(a.owner).indexOf(whoFilter)>=0));
+  // 왼쪽: 내 업무만 (ME 가 담당자 중 하나인 항목) — 담당자 칩 필터와 무관하게 항상 "나" 기준
+  const mine = every.filter(a=> itemOwners(a).indexOf(ME)>=0);
+  // 오른쪽: 전체 회사 — 담당자 칩(전체/특정인 다중선택)으로 추가 좁히기 가능
+  const company = every.filter(passWho);
   const lg = (c,t)=>'<span><i style="background:'+c+'"></i>'+t+'</span>';
-  const hidden = every.length - all.length;
+  const hidden = every.length - company.length;
   return whoFilterBar(every)
     + '<div class="calhead">'
       + '<button data-cal="-1">◀</button><h3>'+calY+'년 '+calM+'월</h3><button data-cal="1">▶</button>'
       + '<button data-cal="0">오늘</button>'
       + '<button data-cal="-12">◀ 전년</button><button data-cal="12">다음해 ▶</button>'
       + '<span class="spacer"></span><span class="none">'
-      + (hidden ? '담당자 필터로 '+hidden+'건 숨김 · ' : '')
+      + (hidden ? '담당자 칩 필터로 전체 회사 캘린더에서 '+hidden+'건 숨김 · ' : '')
       + '빈 날짜 칸 클릭 → 그 날짜로 일정 추가</span>'
     + '</div>'
-    + '<div class="calscroll"><div class="cal">'
-      + ["일","월","화","수","목","금","토"].map((w,i)=>'<div class="dow'+(i===0?' sun':'')+'">'+w+'</div>').join('')
-      + cells + '</div></div>'
-    + strip("매일", daily) + strip("날짜 미상 · 확인 필요", other)
+    + '<div class="caldual">'
+      + calPanelHTML('내 업무 캘린더', mine, calY, calM)
+      + calPanelHTML('전체 회사 캘린더', company, calY, calM)
+    + '</div>'
     + '<div class="legend">'
       + lg("var(--keep)","내 업무 기한") + lg("var(--out)","인계 업무") + lg("var(--in)","인수 업무")
       + lg("#b45309","신고·보고") + lg("#7c3aed","보험·구독 만기")
@@ -5885,6 +6112,7 @@ const withMe = name => name==="(공석)" ? []
 function pcard(p){
   const mine = withMe(p.name);
   const me = p.name===ME, vac = p.name==="(공석)";
+  const idx = DB.people.indexOf(p);
   return '<div class="pcard'+(me?' me':'')+(vac?' vacant':'')+'">'
     + '<h3>'+esc(p.name)+(me?'<em>나</em>':'')+'</h3>'
     + '<div class="rank">'+esc(p.dept)+(p.team?' ('+esc(p.team)+')':'')+' · '+esc(p.rank)+(p.ratio?' · '+esc(p.ratio.replace(/\s+/g," ")):'')+'</div>'
@@ -5893,9 +6121,12 @@ function pcard(p){
     + (p.duties.length
         ? '<ol>'+p.duties.map(d=>'<li>'+esc(d)+'</li>').join('')+'</ol>'
         : '<div class="none">담당업무 미기재</div>')
-    + (p.name!=="(공석)"
-        ? '<div class="act"><button data-who="'+esc(p.name)+'">이 사람만 보기</button>'
-          + '<button data-owner="'+esc(p.name)+'">인계</button></div>' : '')
+    + '<div class="act">'
+      + (p.name!=="(공석)"
+          ? '<button data-who="'+esc(p.name)+'">이 사람만 보기</button>'
+            + '<button data-owner="'+esc(p.name)+'">인계</button>' : '')
+      + '<button data-peredit="'+idx+'">편집</button>'
+      + '</div>'
     + (mine.length
         ? '<div class="sec"><b>나와의 인수인계 '+mine.length+'건</b>'
           + mine.map(t=>'<span class="link" data-task="'+t.id+'"><span class="chip '+t.type+'">'+TN[t.type]+'</span> '+esc(t.name)+'</span>').join('')
@@ -5905,8 +6136,18 @@ function pcard(p){
 }
 function viewPerson(){
   const list = peopleFiltered();
-  if(!list.length) return '<div class="empty">해당 인원 없음</div>';
-  return '<div class="orgnote">출처: 2026.09.01. 업무분장표 · 전 직원 '+(DB.people||[]).length+'명. '
+  const toolbar = '<div class="docbar">'
+    + '<b>인원 명단</b>'
+    + '<button data-peradd>＋ 인원 추가</button>'
+    + '<span class="spacer"></span>'
+    + '<button data-pplxlsxexport>엑셀 내보내기</button>'
+    + '<button data-pplxlsximport>엑셀 가져오기</button>'
+    + '<button data-pplhwpxexport>한글(HWPX) 내보내기</button>'
+    + '</div>';
+  if(!list.length) return toolbar + '<div class="empty">해당 인원 없음</div>';
+  return toolbar
+    + '<div class="orgnote">기준일 '+esc((DB.meta&&DB.meta.기준일)||"")+' · 전 직원 '+(DB.people||[]).length+'명. '
+    + '실제와 다르면 각 카드의 «편집»으로 바로 고치세요. '
     + '위쪽 유지/인계/인수 필터는 이 보기에 적용되지 않음(검색만 적용).</div>'
     + '<div class="pgrid">'+list.map(pcard).join('')+'</div>';
 }
@@ -5951,7 +6192,7 @@ function viewOrg(){
   const all = roster();
   const pick = (dept, rank) => all.filter(p=>p.dept===dept && (!rank || p.rank===rank));
   const node = (p, cls) => p ? '<div class="node'+(p.name===ME?' me':'')+(p.name==="(공석)"?' vac':'')+(cls?' '+cls:'')+'"'
-      + ' data-person="'+DB.people.indexOf(p)+'" title="클릭하면 담당업무">'
+      + ' data-person="'+DB.people.indexOf(p)+'" title="클릭하면 담당업무·편집">'
       + '<b>'+esc(p.name)+(p.name===ME?' ★':'')+'</b>'
       + '<small>'+esc(p.rank)+(p.team?' · '+esc(p.team):'')+(p.role?' · '+esc(p.role.split(",")[0]):'')+'</small></div>' : '';
   const head = (d,r)=>pick(d,r)[0];
@@ -5960,7 +6201,15 @@ function viewOrg(){
     return '<div class="col"><div class="node">'+esc(dept)+'<small>'+ppl.length+'명</small></div>'
       + '<div class="members">'+ppl.map(p=>node(p)).join('')+'</div></div>';
   };
-  return '<div class="orgnote">기준 2026.09.01. 업무분장표. ★ = 나('+esc(ME)+'), 점선 = 공석.</div>'
+  return '<div class="docbar">'
+      + '<b>조직도</b>'
+      + '<button data-peradd>＋ 인원 추가</button>'
+      + '<span class="spacer"></span>'
+      + '<button data-pplxlsxexport>엑셀 내보내기</button>'
+      + '<button data-pplxlsximport>엑셀 가져오기</button>'
+      + '<button data-pplhwpxexport>한글(HWPX) 내보내기</button>'
+    + '</div>'
+    + '<div class="orgnote">기준일 '+esc((DB.meta&&DB.meta.기준일)||"")+'. ★ = 나('+esc(ME)+'), 점선 = 공석. 이름 클릭 → 상세·편집.</div>'
     + '<div class="org">'
     + '<div class="tier">'+node(head("구로IL센터","대표"))+'</div><div class="conn"></div>'
     + '<div class="tier">'+node(head("사무국","소장"))+'</div><div class="conn"></div>'
@@ -5968,6 +6217,263 @@ function viewOrg(){
     + '<div class="branch">'
       + DEPTS.filter(d=>d!=="구로IL센터" && d!=="사무국").map(col).join('')
     + '</div></div>';
+}
+
+/* ─────────── 인원 · 위원회 편집(실제 기준으로 직접 수정) ─────────── */
+let editingPersonIdx = null;
+function openPersonForm(idx){
+  editingPersonIdx = (idx===null || idx===undefined || idx==="") ? null : +idx;
+  const p = editingPersonIdx!=null ? DB.people[editingPersonIdx] : null;
+  pertitle.textContent = p ? "인원 편집" : "인원 추가";
+  perdel.style.display = p ? "" : "none";
+  deptList.innerHTML = DEPTS.map(d=>'<option value="'+esc(d)+'">').join('');
+  rankList.innerHTML = RANKS.map(r=>'<option value="'+esc(r)+'">').join('');
+  const f = perform, g = (k,d)=> (p && p[k]!=null) ? p[k] : d;
+  f.elements["name"].value = g("name",""); f.elements["dept"].value = g("dept", DEPTS[0]||"");
+  f.elements["team"].value = g("team",""); f.elements["rank"].value = g("rank","");
+  f.elements["role"].value = g("role",""); f.elements["ratio"].value = g("ratio","");
+  f.elements["note"].value = g("note",""); f.elements["duties"].value = (p && p.duties ? p.duties.join("\n") : "");
+  perdlg.showModal();
+}
+perdlg.addEventListener("close", ()=>{
+  const v = perdlg.returnValue, f = perform;
+  if(v === "del"){
+    if(editingPersonIdx!=null && confirm("이 인원을 명단에서 삭제할까요?")){ DB.people.splice(editingPersonIdx,1); save(); }
+    return;
+  }
+  if(v !== "ok") return;
+  const d = {name:f.elements["name"].value.trim(), dept:f.elements["dept"].value.trim(), team:f.elements["team"].value.trim(),
+    rank:f.elements["rank"].value.trim(), role:f.elements["role"].value.trim(), ratio:f.elements["ratio"].value.trim(),
+    note:f.elements["note"].value.trim(), duties:L(f.elements["duties"].value)};
+  if(editingPersonIdx!=null) Object.assign(DB.people[editingPersonIdx], d);
+  else (DB.people = DB.people||[]).push(d);
+  save();
+});
+
+let editingCmtIdx = null;
+function openCmtForm(idx){
+  editingCmtIdx = (idx===null || idx===undefined || idx==="") ? null : +idx;
+  const c = editingCmtIdx!=null ? CMTS()[editingCmtIdx] : null;
+  cmttitle.textContent = c ? "위원회 편집" : "위원회 추가";
+  cmtdel.style.display = c ? "" : "none";
+  const f = cmtform, g = (k,d)=> (c && c[k]!=null) ? c[k] : d;
+  f.elements["name"].value = g("name",""); f.elements["doc"].value = g("doc","");
+  f.elements["rule"].value = g("rule",""); f.elements["note"].value = g("note","");
+  cmtdlg.showModal();
+}
+cmtdlg.addEventListener("close", ()=>{
+  const v = cmtdlg.returnValue, f = cmtform;
+  if(v === "del"){
+    if(editingCmtIdx!=null && confirm("이 위원회를 소속 위원 전체와 함께 삭제할까요?")){ DB.committees.splice(editingCmtIdx,1); save(); }
+    return;
+  }
+  if(v !== "ok") return;
+  const d = {name:f.elements["name"].value.trim(), doc:f.elements["doc"].value.trim(), rule:f.elements["rule"].value.trim(), note:f.elements["note"].value.trim()};
+  if(editingCmtIdx!=null) Object.assign(CMTS()[editingCmtIdx], d);
+  else (DB.committees = DB.committees||[]).push(Object.assign({id:"cm-new-"+Date.now(), members:[]}, d));
+  save();
+});
+
+let editingCmtMember = null;
+function openCmtMemberForm(ci, mi){
+  editingCmtMember = {ci:+ci, mi:(mi===null||mi===undefined||mi==="")?null:+mi};
+  const c = CMTS()[editingCmtMember.ci]; if(!c) return;
+  const m = editingCmtMember.mi!=null ? c.members[editingCmtMember.mi] : null;
+  cmtmdel.style.display = m ? "" : "none";
+  const f = cmtmform, g = (k,d)=> (m && m[k]!=null) ? m[k] : d;
+  f.elements["role"].value = g("role",""); f.elements["name"].value = g("name","");
+  f.elements["kind"].value = g("kind",""); f.elements["renew"].value = g("renew","");
+  f.elements["start"].value = g("start","")||""; f.elements["end"].value = g("end","")||"";
+  cmtmdlg.showModal();
+}
+cmtmdlg.addEventListener("close", ()=>{
+  const v = cmtmdlg.returnValue, f = cmtmform;
+  const c = CMTS()[editingCmtMember.ci]; if(!c) return;
+  if(v === "del"){
+    if(editingCmtMember.mi!=null && confirm("이 위원을 삭제할까요?")){ c.members.splice(editingCmtMember.mi,1); save(); }
+    return;
+  }
+  if(v !== "ok") return;
+  const d = {role:f.elements["role"].value.trim(), name:f.elements["name"].value.trim(), kind:f.elements["kind"].value.trim(),
+    renew:f.elements["renew"].value.trim(), start:f.elements["start"].value, end:f.elements["end"].value};
+  if(editingCmtMember.mi!=null) Object.assign(c.members[editingCmtMember.mi], d);
+  else c.members.push(d);
+  save();
+});
+
+/* ─────────── 엑셀(xlsx) 내보내기 · 가져오기 ─────────── */
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+function exportPeopleXlsx(){
+  const rows = (DB.people||[]).map(p=>({
+    부서:p.dept||"", 팀:p.team||"", 직급:p.rank||"", 성명:p.name||"",
+    역할:p.role||"", 업무비율:p.ratio||"", 비고:p.note||"", 담당업무:(p.duties||[]).join("; ")
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "인원명단");
+  XLSX.writeFile(wb, "인원명단_"+iso(new Date())+".xlsx");
+}
+pplXlsxFile.addEventListener("change", ()=>{
+  const file = pplXlsxFile.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const wb = XLSX.read(ev.target.result, {type:"array"});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+      if(!rows.length){ alert("읽을 데이터가 없습니다."); return; }
+      if(!confirm("현재 인원 명단 "+(DB.people||[]).length+"명을 엑셀의 "+rows.length+"명으로 전부 교체합니다. 계속할까요?")) return;
+      DB.people = rows.map(r=>({
+        dept:String(r["부서"]||"").trim(), team:String(r["팀"]||"").trim(),
+        rank:String(r["직급"]||"").trim(), name:String(r["성명"]||"").trim(),
+        role:String(r["역할"]||"").trim(), ratio:String(r["업무비율"]||"").trim(),
+        note:String(r["비고"]||"").trim(),
+        duties:String(r["담당업무"]||"").split(/;|\n/).map(x=>x.trim()).filter(Boolean)
+      }));
+      save();
+      alert("인원 명단 "+DB.people.length+"명을 반영했습니다.");
+    }catch(err){ alert("엑셀을 읽는 중 문제가 발생했습니다: "+err.message); }
+    finally{ pplXlsxFile.value = ""; }
+  };
+  reader.readAsArrayBuffer(file);
+});
+function exportCmtXlsx(){
+  const rows = [];
+  CMTS().forEach(c=>{
+    if(!c.members.length){ rows.push({위원회명:c.name, 근거:c.doc||"", 구성기준:c.rule||"", 비고:c.note||"",
+      "직위·역할":"", 성명:"", 구분:"", 임기시작:"", 임기종료:"", 연임:""}); return; }
+    c.members.forEach(m=>rows.push({
+      위원회명:c.name, 근거:c.doc||"", 구성기준:c.rule||"", 비고:c.note||"",
+      "직위·역할":m.role||"", 성명:m.name||"", 구분:m.kind||"",
+      임기시작:m.start||"", 임기종료:m.end||"", 연임:m.renew||""
+    }));
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "위원회");
+  XLSX.writeFile(wb, "위원회_"+iso(new Date())+".xlsx");
+}
+cmtXlsxFile.addEventListener("change", ()=>{
+  const file = cmtXlsxFile.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const wb = XLSX.read(ev.target.result, {type:"array"});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+      if(!rows.length){ alert("읽을 데이터가 없습니다."); return; }
+      const names = [...new Set(rows.map(r=>String(r["위원회명"]||"").trim()).filter(Boolean))];
+      if(!confirm("현재 위원회 "+CMTS().length+"개를 엑셀의 "+names.length+"개 위원회로 전부 교체합니다. 계속할까요?")) return;
+      const byName = {};
+      rows.forEach(r=>{
+        const name = String(r["위원회명"]||"").trim(); if(!name) return;
+        if(!byName[name]) byName[name] = {id:"cm-"+name.replace(/\s+/g,""), name,
+          doc:String(r["근거"]||"").trim(), rule:String(r["구성기준"]||"").trim(),
+          note:String(r["비고"]||"").trim(), members:[]};
+        const role = String(r["직위·역할"]||"").trim(), mname = String(r["성명"]||"").trim();
+        if(role || mname) byName[name].members.push({
+          role, name:mname, kind:String(r["구분"]||"").trim(),
+          start:String(r["임기시작"]||"").trim(), end:String(r["임기종료"]||"").trim(),
+          renew:String(r["연임"]||"").trim()
+        });
+      });
+      DB.committees = Object.values(byName);
+      save();
+      alert("위원회 "+DB.committees.length+"개를 반영했습니다.");
+    }catch(err){ alert("엑셀을 읽는 중 문제가 발생했습니다: "+err.message); }
+    finally{ cmtXlsxFile.value = ""; }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+/* ─────────── 한글(HWPX) 내보내기 ─────────── */
+// 문단 텍스트(탭 구분)로 내보냄 — 한글에서 열어 전체선택 → 입력 → 표 → «텍스트를 표로»(구분자: 탭)를 누르면 바로 표가 됨.
+// 실제 표(hp:tbl)로 직접 만드는 방식은 한글 프로그램으로 열어 검증할 방법이 없어(이 환경엔 한글이 없음)
+// 스키마가 조금이라도 어긋나면 파일이 아예 안 열릴 위험이 있어, 문단 방식이 훨씬 안전합니다.
+function hwpxHeaderXml(){
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<hh:head xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head" xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" xmlns:hc="http://www.hancom.co.kr/hwpml/2011/core" version="1.31" secCnt="1">'
+    + '<hh:beginNum page="1" footnote="1" endnote="1" pic="1" tbl="1" equation="1"/>'
+    + '<hh:refList>'
+    + '<hh:fontfaces itemCnt="1"><hh:fontface lang="HANGUL" fontCnt="1">'
+    + '<hh:font id="0" face="함초롬바탕" type="TTF" isEmbedded="0"/></hh:fontface></hh:fontfaces>'
+    + '<hh:borderFills itemCnt="0"/>'
+    + '<hh:charProperties itemCnt="1"><hh:charPr id="0" height="1000" textColor="#000000" shadeColor="none" useFontSpace="0" useKerning="0" symMark="NONE">'
+    + '<hh:fontRef hangul="0" latin="0" hanja="0" japanese="0" other="0" symbol="0" user="0"/>'
+    + '<hh:ratio hangul="100" latin="100" hanja="100" japanese="100" other="100" symbol="100" user="100"/>'
+    + '<hh:spacing hangul="0" latin="0" hanja="0" japanese="0" other="0" symbol="0" user="0"/>'
+    + '<hh:relSz hangul="100" latin="100" hanja="100" japanese="100" other="100" symbol="100" user="100"/>'
+    + '<hh:offset hangul="0" latin="0" hanja="0" japanese="0" other="0" symbol="0" user="0"/></hh:charPr></hh:charProperties>'
+    + '<hh:tabProperties itemCnt="1"><hh:tabPr id="0" autoTabLeft="0" autoTabRight="0"/></hh:tabProperties>'
+    + '<hh:numberings itemCnt="0"/>'
+    + '<hh:paraProperties itemCnt="1"><hh:paraPr id="0" tabPrIDRef="0" condense="0" fontLineHeight="0" snapToGrid="1" suppressLineNumbers="0" checked="0">'
+    + '<hh:align horizontal="LEFT" vertical="BASELINE"/><hh:heading type="NONE" idRef="0" level="0"/>'
+    + '<hh:breakSetting breakLatinWord="KEEP_WORD" breakNonLatinWord="KEEP_WORD" widowOrphan="0" keepWithNext="0" keepLines="0" pageBreakBefore="0" lineWrap="BREAK"/>'
+    + '<hh:autoSpacing eAsianEng="0" eAsianNum="0"/></hh:paraPr></hh:paraProperties>'
+    + '<hh:styles itemCnt="1"><hh:style id="0" type="PARA" name="바탕글" engName="Normal" paraPrIDRef="0" charPrIDRef="0" nextStyleIDRef="0" langID="1042" lockForm="0"/></hh:styles>'
+    + '</hh:refList></hh:head>';
+}
+function hwpxSectionXml(title, lines){
+  const p = t => '<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">'
+    + '<hp:run charPrIDRef="0"><hp:t>'+esc(t)+'</hp:t></hp:run></hp:p>';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<hs:sec xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph">'
+    + p(title) + lines.map(p).join('')
+    + '</hs:sec>';
+}
+async function buildHwpxBlob(title, header, rows){
+  const zip = new JSZip();
+  zip.file("mimetype", "application/hwp+zip", {compression:"STORE"});
+  zip.file("version.xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<hv:HCFVersion xmlns:hv="http://www.hancom.co.kr/hwpml/2011/version" tagID="HWPX" major="5" minor="1" micro="0" buildNumber="0" os="10" xmlVersion="1.4" application="EopmuBunjang" appVersion="1.0"/>');
+  zip.file("settings.xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<ha:HWPApplicationSetting xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app"/>');
+  zip.file("Contents/header.xml", hwpxHeaderXml());
+  const lines = [header.join("\t")].concat(rows.map(r=>r.join("\t")));
+  zip.file("Contents/section0.xml", hwpxSectionXml(title, lines));
+  zip.file("Contents/content.hpf", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<opf:package xmlns:opf="http://www.idpf.org/2007/opf/" unique-identifier="package-id" version="1.0">'
+    + '<opf:metadata><opf:title>'+esc(title)+'</opf:title></opf:metadata>'
+    + '<opf:manifest>'
+    + '<opf:item id="header" href="Contents/header.xml" media-type="application/xml"/>'
+    + '<opf:item id="section0" href="Contents/section0.xml" media-type="application/xml"/>'
+    + '</opf:manifest>'
+    + '<opf:spine><opf:itemref idref="section0" linear="yes"/></opf:spine>'
+    + '</opf:package>');
+  zip.file("META-INF/container.xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<ocf:container xmlns:ocf="urn:oasis:names:tc:opendocument:xmlns:container" xmlns:hpf="http://www.hancom.co.kr/hwpml/2011/hpf">'
+    + '<ocf:rootfiles><ocf:rootfile full-path="Contents/content.hpf" media-type="application/hwpml-package+xml"/></ocf:rootfiles>'
+    + '</ocf:container>');
+  zip.file("META-INF/manifest.xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<odf:manifest xmlns:odf="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0">'
+    + '<odf:file-entry odf:full-path="/" odf:media-type="application/hwp+zip"/>'
+    + '</odf:manifest>');
+  return zip.generateAsync({type:"blob", mimeType:"application/hwp+zip"});
+}
+async function exportPeopleHwpx(){
+  const header = ["부서","팀","직급","성명","역할","업무비율","비고","담당업무"];
+  const rows = (DB.people||[]).map(p=>[p.dept||"", p.team||"", p.rank||"", p.name||"",
+    p.role||"", p.ratio||"", p.note||"", (p.duties||[]).join("; ")]);
+  const blob = await buildHwpxBlob("인원 명단", header, rows);
+  downloadBlob(blob, "인원명단_"+iso(new Date())+".hwpx");
+  alert("HWPX로 내려받았습니다. 한글에서 연 뒤 표로 만들려면: 전체 선택 → 입력 → 표 → «텍스트를 표로»(구분자: 탭).");
+}
+async function exportCmtHwpx(){
+  const header = ["위원회명","근거","구성기준","직위·역할","성명","구분","임기시작","임기종료","연임"];
+  const rows = [];
+  CMTS().forEach(c=>{
+    if(!c.members.length){ rows.push([c.name, c.doc||"", c.rule||"", "", "", "", "", "", ""]); return; }
+    c.members.forEach(m=>rows.push([c.name, c.doc||"", c.rule||"", m.role||"", m.name||"",
+      m.kind||"", m.start||"", m.end||"", m.renew||""]));
+  });
+  const blob = await buildHwpxBlob("위원회 구성", header, rows);
+  downloadBlob(blob, "위원회_"+iso(new Date())+".hwpx");
+  alert("HWPX로 내려받았습니다. 한글에서 연 뒤 표로 만들려면: 전체 선택 → 입력 → 표 → «텍스트를 표로»(구분자: 탭).");
 }
 
 /* ─────────── 이벤트 ─────────── */
@@ -6051,6 +6557,24 @@ document.addEventListener("click", e=>{
   if(ce){ openContact(byCid(ce.dataset.ctedit)); return; }
   const cc = e.target.closest("[data-ct]");
   if(cc){ ctCat = cc.dataset.ct; render(); return; }
+  const pa = e.target.closest("[data-peradd]");
+  if(pa){ openPersonForm(null); return; }
+  const pe2 = e.target.closest("[data-peredit]");
+  if(pe2){ if(pdlg.open) pdlg.close(); openPersonForm(pe2.dataset.peredit); return; }
+  const ca = e.target.closest("[data-cmtadd]");
+  if(ca){ openCmtForm(null); return; }
+  const ceD = e.target.closest("[data-cmtedit]");
+  if(ceD){ openCmtForm(ceD.dataset.cmtedit); return; }
+  const ma = e.target.closest("[data-mbradd]");
+  if(ma){ openCmtMemberForm(ma.dataset.mbradd, null); return; }
+  const med = e.target.closest("[data-mbredit]");
+  if(med){ const parts = med.dataset.mbredit.split("|"); openCmtMemberForm(parts[0], parts[1]); return; }
+  if(e.target.closest("[data-pplxlsxexport]")){ exportPeopleXlsx(); return; }
+  if(e.target.closest("[data-pplxlsximport]")){ pplXlsxFile.click(); return; }
+  if(e.target.closest("[data-cmtxlsxexport]")){ exportCmtXlsx(); return; }
+  if(e.target.closest("[data-cmtxlsximport]")){ cmtXlsxFile.click(); return; }
+  if(e.target.closest("[data-pplhwpxexport]")){ exportPeopleHwpx(); return; }
+  if(e.target.closest("[data-cmthwpxexport]")){ exportCmtHwpx(); return; }
   const ne = e.target.closest("[data-newev]");
   if(ne && !e.target.closest(".ev")){ openEventForm(null, ne.dataset.newev); return; }
   const ee = e.target.closest("[data-evedit]");
