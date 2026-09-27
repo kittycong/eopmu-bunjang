@@ -276,6 +276,32 @@ body[data-focus="1"] .content>.bar{display:none}
 .mefold{margin-top:10px;border-top:1px dashed var(--line);padding-top:6px}
 .mefold>summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--dim)}
 /* ── 자금·업무 흐름 ── */
+.jump{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.jump button{padding:5px 12px;font-size:12.5px}
+.flowsec{scroll-margin-top:16px}
+.linkbtn{margin-top:8px;background:transparent;border:none;color:var(--keep);padding:0;font-size:12.5px;text-decoration:underline;cursor:pointer}
+.reqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px;margin-top:8px}
+.reqset{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg);scroll-margin-top:20px}
+.reqh{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px}.reqh b{font-size:13.5px}.reqh small{color:var(--dim)}
+.reqh button{padding:3px 8px;font-size:11.5px}
+.reqi{display:flex;gap:6px;align-items:flex-start;font-size:12.5px;padding:3px 0;cursor:pointer;line-height:1.4}
+.reqi small{display:block;color:var(--dim);font-size:11px}
+.reqi.d>span:last-child{color:var(--dim);text-decoration:line-through}
+.rk{flex:none;font-size:10.5px;border-radius:4px;padding:1px 5px;background:var(--chip);color:var(--ink);font-weight:600}
+.rk-w{background:#e8f0fe;color:#1a56c4}.rk-o{background:#eef6ec;color:#2f6b2f}.rk-r{background:#fdecea;color:#b3261e}
+.rk-a{background:#fff3e0;color:#9a5b00}.rk-i{background:#f3e8fd;color:#6b2fb3}.rk-e{background:#eaf4f4;color:#246b6b}
+.reqlinks{margin-top:6px;font-size:11.5px;color:var(--dim)}.reqlinks .lk{cursor:pointer;color:var(--keep);text-decoration:underline dotted;margin-right:8px}
+.reqmini{margin-bottom:6px}.reqmini ul{margin:4px 0;padding-left:18px;font-size:12.5px}.reqmini li.d{color:var(--dim);text-decoration:line-through}
+.cardgrid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:8px}
+.cardgrid>div:last-child{order:-1}
+.cproc{columns:2;column-gap:28px}
+@media (max-width:860px){.cproc{columns:1}}
+.cardh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.cardh button{margin-left:auto;padding:4px 10px;font-size:12px}
+.cproc{margin:0;padding-left:20px;font-size:12.5px;line-height:1.55}
+.cardrow{cursor:pointer}.cardrow:hover td{background:var(--chip)}
+.cardrow.off td{color:var(--dim);text-decoration:line-through}
+.cardrow .num{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+@media (max-width:860px){.cardgrid{grid-template-columns:1fr}}
 .flowsec{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
 .flowsec h3{margin:0 0 4px;font-size:15px}
 .flowsec .none{margin-bottom:8px}
@@ -767,6 +793,57 @@ textarea{resize:vertical;min-height:64px}
     <button value="ok">저장</button><button value="cancel" formnovalidate>취소</button>
     <span class="spacer"></span><button value="del" formnovalidate id="perdel" style="color:var(--warn)">삭제</button>
   </div>
+</form></dialog>
+
+<dialog id="carddlg"><form method="dialog" id="cardform">
+  <h3 id="cardtitle" style="margin:0 0 4px;font-size:16px">카드 등록</h3>
+  <div class="none" style="margin-bottom:8px">카드 번호는 <b>끝 4자리만</b> 저장됩니다. 전체 번호를 넣어도 앞자리는 버립니다.</div>
+  <div class="row">
+    <div><label class="f">사업 · 재원</label><input type="text" name="biz" list="cardBizList" required placeholder="예: 서울시 보조금 (IL센터지원사업)"></div>
+    <div><label class="f">카드 종류</label><select name="kind"><option>보조금 전용카드</option><option>법인 체크카드</option><option>법인 신용카드</option><option>기타</option></select></div>
+  </div>
+  <datalist id="cardBizList"></datalist>
+  <div class="row">
+    <div><label class="f">카드사</label><input type="text" name="issuer" placeholder="예: 기업은행 BC"></div>
+    <div><label class="f">번호 끝 4자리</label><input type="text" name="last4" inputmode="numeric" autocomplete="off" required placeholder="1234"></div>
+  </div>
+  <div class="row">
+    <div><label class="f">사용자 · 보관자</label><input type="text" name="holder"></div>
+    <div><label class="f">결제 은행 (계좌번호 X)</label><input type="text" name="bank" placeholder="예: 신한은행 구비 운영비 통장"></div>
+  </div>
+  <div class="row">
+    <div><label class="f">발급일</label><input type="date" name="issued"></div>
+    <div><label class="f">유효기간</label><input type="month" name="exp"></div>
+  </div>
+  <div class="row">
+    <div><label class="f">용도</label><input type="text" name="purpose" placeholder="예: 사업비 집행, 소모품 구입"></div>
+    <div><label class="f">상태</label><select name="status"><option>사용중</option><option>정지</option><option>분실·재발급</option><option>해지</option></select></div>
+  </div>
+  <label class="f">메모</label><input type="text" name="note">
+  <div class="act" style="margin-top:14px">
+    <button value="ok">저장</button><button value="cancel" formnovalidate>취소</button>
+    <span class="spacer"></span><button value="del" formnovalidate id="carddel" style="color:var(--warn)">삭제</button>
+  </div>
+</form></dialog>
+
+<dialog id="cprocdlg"><form method="dialog" id="cprocform">
+  <h3 style="margin:0 0 8px;font-size:16px">카드 신규 발급 절차 편집</h3>
+  <label class="f">한 줄에 한 단계</label><textarea name="steps" style="min-height:220px"></textarea>
+  <div class="act" style="margin-top:14px"><button value="ok">저장</button><button value="cancel" formnovalidate>취소</button>
+    <span class="spacer"></span><button value="reset" formnovalidate>초안으로 되돌리기</button></div>
+</form></dialog>
+
+<dialog id="reqdlg"><form method="dialog" id="reqform">
+  <h3 id="reqtitle" style="margin:0 0 8px;font-size:16px">서류 목록 편집</h3>
+  <div class="row">
+    <div><label class="f">상황 · 업무</label><input type="text" name="name" required placeholder="예: 카드 신규 발급"></div>
+    <div><label class="f">근거</label><select name="basis"><option>초안</option><option>인계서</option><option>확인 완료</option></select></div>
+  </div>
+  <label class="f">서류 — 한 줄에 하나: 구분 | 서류명 | 비고</label>
+  <textarea name="items" style="min-height:220px" placeholder="작성 | 위임장 | 대표자 인감 날인&#10;대표자 | 대표자 신분증 사본&#10;발급 | 사용인감계 | 3개월 이내"></textarea>
+  <div class="none">구분은 작성 · 기관 · 대표자 · 대리인 · 발급 · 증빙 중에서 쓰면 색이 붙습니다.</div>
+  <div class="act" style="margin-top:14px"><button value="ok">저장</button><button value="cancel" formnovalidate>취소</button>
+    <span class="spacer"></span><button value="del" formnovalidate id="reqdel" style="color:var(--warn)">목록 삭제</button></div>
 </form></dialog>
 
 <dialog id="cmtdlg"><form method="dialog" id="cmtform">
@@ -4583,6 +4660,7 @@ function normalize(db){
     if(!t.files) t.files = [];
     if(!t.shots) t.shots = [];
   });
+  if(!Array.isArray(db.cards)) db.cards = [];
   return db;
 }
 function load(){
@@ -4666,6 +4744,8 @@ function save(){
   lastSaved = JSON.stringify(DB);
   try{ localStorage.setItem(KEY, lastSaved); }catch(e){} syncQueue(); render();
   if(tdlg.open && curTask) openTask(curTask.id); }
+// 체크박스처럼 화면을 다시 그릴 필요 없는 변경 — 스크롤 위치 유지
+function saveQuiet(){ bkPush(lastSaved); lastSaved = JSON.stringify(DB); try{ localStorage.setItem(KEY, lastSaved); }catch(e){} syncQueue(); }
 const L = s => (s||"").split("\n").map(x=>x.trim()).filter(Boolean);
 const C = s => (s||"").split(",").map(x=>x.trim()).filter(Boolean);
 const esc = s => (s==null?"":String(s)).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -5333,12 +5413,13 @@ function agenda(){
     if(e.due) parseDeadline(e.due).forEach(p=>
     out.push({p, id:e.id, ref:"event", k:e.cat, owner:e.owner, title:e.title,
               sub:e.cat+(e.owner?" · "+e.owner:"")+(e.status&&e.status!=="예정"?" · "+e.status:"")})); });
+  if(typeof cardAgenda === "function") cardAgenda().forEach(a=>out.push(a));
   EVENTS().forEach(e=>{ if(!e.due && !e.date && !e.rule && !linkedDup(e))
     out.push({p:{kind:"other",text:e.status||"날짜 미상"}, id:e.id, ref:"event", k:e.cat,
               owner:e.owner, title:e.title, sub:e.cat+(e.status?" · "+e.status:"")}); });
   return out;
 }
-const evChip = a => '<div class="ev'+(a.moved?' moved':'')+(a.prep?' prep':'')+'" data-k="'+esc(a.k)+'" data-'+(a.ref==="task"?"task":"event")+'="'+a.id+'"'
+const evChip = a => '<div class="ev'+(a.moved?' moved':'')+(a.prep?' prep':'')+'" data-k="'+esc(a.k)+'" data-'+(a.ref==="task"?"task":a.ref==="card"?"card":"event")+'="'+a.id+'"'
   + ' title="'+esc((a.prep?'[전날 준비] ':'')+a.title+' — '+a.sub+(a.moved?' · 원래 '+a.from+'('+a.why+') → 전 영업일로 앞당김':''))+'">'
   + (a.prep?'<b>준비</b> ':'')+esc(a.title)+(a.moved?' <span class="mv">↩'+esc(a.from)+'</span>':'')+'</div>';
 
@@ -5597,6 +5678,7 @@ function whoBar(){
 }
 
 function itemOwners(a){
+  if(a.ref === "card") return [ME];
   if(a.ref === "event"){
     const o = splitOwner(a.owner);
     return o.length ? o : ["미지정"];
@@ -5780,10 +5862,12 @@ function teamSet(){
 }
 function isTeamItem(a){
   const T = teamSet();
+  if(a.ref==="card") return true;
   if(a.ref==="task"){ const t = byId(a.id); return !!t; } // 업무 목록은 모두 사무행정팀 기준으로 작성됨
   return itemOwners(a).some(o=> T.has(o) || o==="공통" || o==="다같이");
 }
 function isMine(a){
+  if(a.ref==="card") return true;
   if(a.ref==="task"){ const t = byId(a.id); return !!t && ["keep","in","out","common","tbd"].indexOf(t.type)>=0; }
   const o = splitOwner(a.owner); return o.indexOf(ME)>=0 || o.indexOf("공통")>=0;
 }
@@ -5799,7 +5883,8 @@ function meCard(t){
   const st = (t.steps||[]).length, dn = doneOf(t).filter(i=>i<st).length, nd = nextDueShifted(t);
   const pk = periodKey(t), lp = lastPeriodDone(t);
   const warn = (t.traps||[]).some(x=>/담당 확인|분장표에 없음/.test(x));
-  const badges = [(t.shots||[]).length?'캡처 '+t.shots.length:'', (t.files||[]).length?'문서 '+t.files.length:'',
+  const rq = reqForTask(t.id).reduce((n,r)=>n+r.items.length,0);
+  const badges = [rq?'서류 '+rq:'', (t.shots||[]).length?'캡처 '+t.shots.length:'', (t.files||[]).length?'문서 '+t.files.length:'',
     (t.assets||[]).length?'폴더 '+t.assets.length:'', (t.traps||[]).length?'주의 '+t.traps.length:''].filter(Boolean);
   return '<div class="mecard'+(warn?' warn':'')+'" data-task="'+t.id+'">'
     + '<div class="mt">'+esc(t.name)+'</div>'
@@ -5856,7 +5941,7 @@ function viewMe(){
   rows.sort((x,y)=>x.d-y.d);
   const kindOf = a => { if(a.ref!=="task") return a.k||"일정"; const t = byId(a.id); return t ? TN[t.type] : ""; };
   const soon = rows.length ? rows.map(r=>{ const dd = Math.round((r.d-today)/DAY);
-      return '<div class="li" '+(r.a.ref==="task"?'data-task="':'data-event="')+r.a.id+'">'
+      return '<div class="li" '+(r.a.ref==="task"?'data-task="':r.a.ref==="card"?'data-card="':'data-event="')+r.a.id+'">'
         + '<span class="d'+(dd<=1?' hot':'')+'">'+(dd===0?'오늘':dd===1?'내일':'D-'+dd)+' '+(r.d.getMonth()+1)+'/'+r.d.getDate()+'('+WD[r.d.getDay()]+')</span>'
         + '<span class="x">'+(r.prep?'<b class="prepb">준비</b> ':'')+esc(r.a.title)+'<small>'+esc(kindOf(r.a))+(r.prep?' · 지급 전날 이체 등록·확인':'')+'</small></span></div>'; }).join('')
     : '<div class="none">2주 안에 잡힌 일정이 없습니다</div>';
@@ -5937,6 +6022,181 @@ function refAttr(id){
   if(EVENTS().some(e=>e.id===id)) return ' data-event="'+id+'"';
   return "";
 }
+/* ─────────── 사업별 카드 ─────────── */
+// 번호는 끝 4자리만. 공개본 빌드에서는 cards 를 통째로 뺀다(build.py · anonymize.py).
+const CARD_PROC_DEFAULT = [
+  "사업·재원 확인 — 어느 사업비로 쓸 카드인지, 보조금 전용카드 대상인지 확인",
+  "발급 필요성·용도 기안 후 결재",
+  "필요 서류 준비 — 아래 «필요 서류»의 «카드 신규 발급» 체크리스트",
+  "카드사(은행) 신청 — 결제 통장은 해당 사업 통장으로 지정",
+  "보조금 전용카드는 보탬e에 카드 등록 (메뉴 확인 필요)",
+  "수령 후 이 목록에 등록 — 사업, 끝 4자리, 유효기간, 사용자",
+  "사용자 지정·교부, 수령 확인 서명",
+  "첫 사용 후 결제 통장 출금·증빙 대조"
+];
+const CARDS = () => DB.cards || (DB.cards = []);
+const cardProc = () => (DB.cardProc && DB.cardProc.length) ? DB.cardProc : CARD_PROC_DEFAULT;
+const cardMask = c => '···· '+esc(c.last4||'????');
+function cardExp(c){ // 유효기간(YYYY-MM) → 그 달 말일
+  const m = /^(\d{4})-(\d{2})$/.exec(c.exp||""); if(!m) return null;
+  return new Date(+m[1], +m[2], 0);
+}
+function cardAgenda(){
+  return CARDS().filter(c=>c.status==="사용중" && cardExp(c)).map(c=>{ const d = cardExp(c);
+    return {p:{kind:"date", y:d.getFullYear(), m:d.getMonth()+1, d:d.getDate()}, id:c.id, ref:"card", k:"보험·구독 만기",
+      owner:ME, title:"카드 만료 · "+c.biz+" ····"+(c.last4||""), sub:"사업별 카드 · 재발급 준비"}; });
+}
+let editingCard = null;
+function openCard(id){
+  editingCard = id ? CARDS().find(c=>c.id===id) : null;
+  cardtitle.textContent = editingCard ? "카드 수정" : "카드 등록";
+  carddel.style.display = editingCard ? "" : "none";
+  cardBizList.innerHTML = [...new Set(FUNDS.map(f=>f.src).concat(CARDS().map(c=>c.biz)))].map(b=>'<option value="'+esc(b)+'">').join('');
+  const f = cardform.elements, c = editingCard || {};
+  ["biz","issuer","holder","bank","issued","exp","purpose","note"].forEach(k=> f[k].value = c[k]||"");
+  f["kind"].value = c.kind || "보조금 전용카드"; f["status"].value = c.status || "사용중"; f["last4"].value = c.last4 || "";
+  carddlg.showModal();
+}
+const stripLong = v => (v||"").replace(/\d[\d\s-]{7,}\d/g, "[번호 삭제]"); // 긴 숫자(카드·계좌번호) 저장 안 함
+carddlg.addEventListener("close", ()=>{
+  const v = carddlg.returnValue, f = cardform.elements;
+  if(v==="del"){ if(editingCard && confirm("이 카드를 목록에서 삭제할까요?")){ DB.cards = CARDS().filter(c=>c!==editingCard); save(); } return; }
+  if(v!=="ok") return;
+  const digits = (f["last4"].value||"").replace(/\D/g,"");
+  if(digits.length < 4){ alert("카드 번호 끝 4자리를 숫자로 넣어주세요."); carddlg.showModal(); return; }
+  const notes = [];
+  if(digits.length > 4) notes.push("카드 번호는 끝 4자리("+digits.slice(-4)+")만 저장했습니다.");
+  const d = {biz:f["biz"].value.trim(), kind:f["kind"].value, issuer:f["issuer"].value.trim(), last4:digits.slice(-4),
+    holder:f["holder"].value.trim(), bank:stripLong(f["bank"].value.trim()), issued:f["issued"].value, exp:f["exp"].value,
+    purpose:stripLong(f["purpose"].value.trim()), status:f["status"].value, note:stripLong(f["note"].value.trim())};
+  if(d.bank!==f["bank"].value.trim() || d.purpose!==f["purpose"].value.trim() || d.note!==f["note"].value.trim())
+    notes.push("결제 은행·용도·메모에 있던 긴 숫자(계좌·카드번호로 보이는 것)는 지웠습니다.");
+  if(editingCard) Object.assign(editingCard, d); else CARDS().push(Object.assign({id:"card-"+Date.now()}, d));
+  save(); if(notes.length) alert(notes.join("\n"));
+});
+reqdlg.addEventListener("close", ()=>{
+  const v = reqdlg.returnValue, f = reqform.elements, sets = materializeReqs();
+  if(v==="del"){ if(editingReq && confirm("이 서류 목록을 삭제할까요?")){ DB.reqSets = sets.filter(r=>r!==editingReq); save(); } return; }
+  if(v!=="ok") return;
+  const items = L(f["items"].value).map(line=>{ const [a,b,c] = line.split("|").map(x=>(x||"").trim());
+    return b ? {k:a, n:b, note:c||""} : {k:"", n:a, note:""}; });
+  const d = {name:f["name"].value.trim(), basis:f["basis"].value, items};
+  if(editingReq){ Object.assign(editingReq, d); DB.reqCheck = DB.reqCheck||{}; DB.reqCheck[editingReq.id] = []; }
+  else sets.push(Object.assign({id:"rq-"+Date.now(), tasks:[]}, d));
+  save();
+});
+cprocdlg.addEventListener("close", ()=>{
+  const v = cprocdlg.returnValue;
+  if(v==="reset"){ delete DB.cardProc; save(); return; }
+  if(v!=="ok") return;
+  DB.cardProc = L(cprocform.elements["steps"].value); save();
+});
+function cardSection(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const list = CARDS().slice().sort((a,b)=>(a.status==="사용중"?0:1)-(b.status==="사용중"?0:1) || (a.biz||"").localeCompare(b.biz||""));
+  const expCell = c => { const d = cardExp(c); if(!d) return '<span class="none">-</span>';
+    const dd = Math.round((d-today)/DAY), lbl = esc(c.exp.replace("-","."));
+    return lbl + (c.status!=="사용중" ? '' : dd<0 ? ' <span class="chip tbd">만료됨</span>' : dd<=60 ? ' <span class="chip out">D-'+dd+'</span>' : ''); };
+  const draft = !(DB.cardProc && DB.cardProc.length);
+  return '<div class="flowsec"><h3>사업별 카드</h3>'
+    + '<div class="none">카드 번호는 끝 4자리만 저장됩니다. 이 목록은 공개 사이트에는 올라가지 않습니다.</div>'
+    + '<div class="cardgrid"><div><div class="cardh"><b>신규 발급 절차</b>'+(draft?' <span class="chip tbd">초안 — 실제 절차로 고쳐 주세요</span>':'')
+      + ' <button data-cproc>절차 편집</button></div><ol class="cproc">'+cardProc().map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>'
+      + '<button class="linkbtn" data-jump="rq_rq-card">필요 서류 체크리스트 보기 ↓</button></div>'
+    + '<div><div class="cardh"><b>발급된 카드 '+list.length+'장</b> <button data-cardadd>＋ 카드 등록</button></div>'
+    + (list.length ? '<div class="tblwrap"><table class="ftbl"><thead><tr><th>사업·재원</th><th>종류·카드사</th><th>번호</th><th>사용자</th><th>유효기간</th><th>결제 은행</th><th>상태</th></tr></thead><tbody>'
+        + list.map(c=>'<tr class="cardrow'+(c.status!=="사용중"?' off':'')+'" data-card="'+c.id+'" title="눌러서 수정">'
+          + '<td><b>'+esc(c.biz)+'</b>'+(c.purpose?'<br><small>'+esc(c.purpose)+'</small>':'')+'</td>'
+          + '<td>'+esc(c.kind)+(c.issuer?'<br><small>'+esc(c.issuer)+'</small>':'')+'</td>'
+          + '<td class="num">'+cardMask(c)+'</td><td>'+esc(c.holder||'')+'</td><td>'+expCell(c)+'</td>'
+          + '<td>'+esc(c.bank||'')+'</td><td>'+esc(c.status)+'</td></tr>').join('')
+        + '</tbody></table></div>' : '<div class="none">아직 등록된 카드가 없습니다. «＋ 카드 등록»으로 추가하세요.</div>')
+    + '</div></div></div>';
+}
+
+/* ─────────── 업무별 필요 서류 ─────────── */
+// basis: "인계서" = 인수인계서에 적힌 서류 / "초안" = 일반적인 준비 서류, 기관·카드사 기준으로 확인 필요
+// k(구분): 작성 · 기관 · 대표자 · 대리인 · 발급 · 증빙
+const REQ_DEFAULT = [
+  {id:"rq-card", name:"카드 신규 발급", basis:"초안", tasks:["i-timoney"], items:[
+    {k:"작성", n:"발급 기안문 (결재 완료본)"},
+    {k:"작성", n:"카드 발급 신청서", note:"카드사 양식"},
+    {k:"작성", n:"위임장", note:"대리인이 방문할 때 · 대표자 인감 날인"},
+    {k:"기관", n:"고유번호증 사본"},
+    {k:"대표자", n:"대표자 신분증 사본"},
+    {k:"발급", n:"법인인감증명서 또는 사용인감계", note:"발급 3개월 이내인지 확인"},
+    {k:"대리인", n:"방문자(대리인) 신분증"},
+    {k:"기관", n:"결제 통장 사본", note:"해당 사업 통장"},
+    {k:"기관", n:"정관 또는 등기사항증명서", note:"카드사가 요구할 때"}]},
+  {id:"rq-bank", name:"은행 업무 — 대리인 방문 (통장 개설·변경)", basis:"초안", tasks:[], items:[
+    {k:"작성", n:"위임장", note:"대표자 인감 날인"},
+    {k:"작성", n:"금융거래 목적 확인서", note:"통장 개설 시"},
+    {k:"기관", n:"고유번호증 사본"},
+    {k:"대표자", n:"대표자 신분증 사본"},
+    {k:"발급", n:"법인인감증명서 또는 사용인감계", note:"발급 3개월 이내"},
+    {k:"대리인", n:"방문자(대리인) 신분증"},
+    {k:"기관", n:"정관 · 대표자 선임 회의록", note:"은행이 요구할 때"}]},
+  {id:"rq-cert", name:"기관 공동인증서 발급·갱신", basis:"초안", tasks:["i-injeungseo"], items:[
+    {k:"작성", n:"인증서 발급 신청서", note:"은행 양식"},
+    {k:"작성", n:"위임장", note:"대리인 방문 시"},
+    {k:"기관", n:"고유번호증 사본"},
+    {k:"대표자", n:"대표자 신분증 사본"},
+    {k:"발급", n:"법인인감증명서 또는 사용인감계"},
+    {k:"대리인", n:"방문자(대리인) 신분증"}]},
+  {id:"rq-hire", name:"신규 입사 — 계약·보험·급여 등록", basis:"인계서", tasks:["i-gyeyak","i-dancheban-boheom","i-geupyeo","i-saboheom-singo"], items:[
+    {k:"작성", n:"근로계약서", note:"계약직·상용·기간제 구분, 간인 후 개인 인사파일 보관"},
+    {k:"작성", n:"개인정보 수집·이용 동의서", note:"단체상해공제 가입용"},
+    {k:"증빙", n:"통장 사본", note:"보탬e 참여인력 등록용"},
+    {k:"증빙", n:"호봉 확인 자료", note:"서울시 사회복지시설 인건비 기준 (초안: 경력증명서 등 확인)"}]},
+  {id:"rq-rent", name:"임차료·관리비 보탬e 집행", basis:"인계서", tasks:["i-imcharyo"], items:[
+    {k:"증빙", n:"전자세금계산서", note:"메일 수신분"},
+    {k:"증빙", n:"임차료·관리비 명세서", note:"우편 수신분"},
+    {k:"작성", n:"세부내역서", note:"활동지원사업 추가 이체분"},
+    {k:"증빙", n:"송금확인증"},
+    {k:"증빙", n:"청구서 원본", note:"활동지원사업 담당에게 전달"}]},
+  {id:"rq-pay", name:"월 급여 기안 첨부", basis:"인계서", tasks:["i-geupyeo"], items:[
+    {k:"작성", n:"급여세부내역서"},
+    {k:"작성", n:"급여대장", note:"부서별·합계 출력, 첫 장만 결재란, 재원 2개 이상 직원은 수기 표시"},
+    {k:"작성", n:"사회보험부담금 및 퇴직적립금 대장"},
+    {k:"증빙", n:"은행 송금확인증", note:"사본은 전표처리 담당, 원본 별도 보관"}]},
+  {id:"rq-sbj", name:"사회보험 연말정산 기안", basis:"인계서", tasks:["i-saboheom-jeongsan"], items:[
+    {k:"작성", n:"사회보험 정산요약서"},
+    {k:"작성", n:"사회보험정산 리스트"}]}
+];
+const REQS = () => (DB.reqSets && DB.reqSets.length) ? DB.reqSets : REQ_DEFAULT;
+const reqForTask = id => REQS().filter(r=>(r.tasks||[]).indexOf(id)>=0);
+const RQK = {작성:"rk-w", 기관:"rk-o", 대표자:"rk-r", 대리인:"rk-a", 발급:"rk-i", 증빙:"rk-e"};
+function reqChecked(id){ return ((DB.reqCheck||{})[id]) || []; }
+function reqCard(r){
+  const ck = reqChecked(r.id), n = r.items.length, done = ck.filter(i=>i<n).length;
+  return '<div class="reqset" id="rq_'+r.id+'"><div class="reqh"><b>'+esc(r.name)+'</b>'
+    + (r.basis==="초안" ? '<span class="chip tbd">초안 · 확인 필요</span>' : '<span class="chip keep">'+esc(r.basis)+' 기준</span>')
+    + '<small>'+done+'/'+n+' 준비</small>'
+    + '<span class="spacer"></span><button data-reqreset="'+r.id+'">체크 초기화</button><button data-reqedit="'+r.id+'">편집</button></div>'
+    + '<div class="reqitems">'+r.items.map((it,i)=>'<label class="reqi'+(ck.indexOf(i)>=0?' d':'')+'"><input type="checkbox" data-reqchk="'+r.id+'" data-i="'+i+'"'+(ck.indexOf(i)>=0?' checked':'')+'>'
+        + (it.k?'<span class="rk '+(RQK[it.k]||'')+'">'+esc(it.k)+'</span>':'')+'<span>'+esc(it.n)+(it.note?'<small>'+esc(it.note)+'</small>':'')+'</span></label>').join('')+'</div>'
+    + ((r.tasks||[]).filter(byId).length ? '<div class="reqlinks">관련 업무: '+r.tasks.filter(byId).map(id=>'<span class="lk" data-task="'+id+'">'+esc(byId(id).name)+'</span>').join('')+'</div>' : '')
+    + '</div>';
+}
+function reqSection(){
+  return '<div class="flowsec" id="sec-req"><div class="cardh"><h3 style="margin:0">업무별 필요 서류</h3>'
+    + '<button data-reqadd>＋ 서류 목록 추가</button></div>'
+    + '<div class="none">방문·신청 전에 체크하세요. 구분: 작성(우리가 만드는 서류) · 기관 · 대표자 · 대리인 · 발급(유효기간 확인) · 증빙. '
+    + '«초안»은 일반적인 기준이라 은행·카드사·기관마다 다를 수 있습니다.</div>'
+    + '<div class="reqgrid">'+REQS().map(reqCard).join('')+'</div></div>';
+}
+function materializeReqs(){ if(!(DB.reqSets && DB.reqSets.length)) DB.reqSets = JSON.parse(JSON.stringify(REQ_DEFAULT)); return DB.reqSets; }
+let editingReq = null;
+function openReq(id){
+  const sets = materializeReqs(); editingReq = id ? sets.find(r=>r.id===id) : null;
+  const f = reqform.elements, r = editingReq || {name:"", basis:"초안", items:[]};
+  reqtitle.textContent = editingReq ? "서류 목록 편집" : "서류 목록 추가";
+  reqdel.style.display = editingReq ? "" : "none";
+  f["name"].value = r.name; f["basis"].value = r.basis || "초안";
+  f["items"].value = r.items.map(it=>[it.k||"", it.n, it.note||""].filter((x,i)=>i<2||x).join(" | ")).join("\n");
+  reqdlg.showModal();
+}
+
 function viewFlow(){
   const refName = id => { const t = byId(id); if(t) return t.name; const e = EVENTS().find(x=>x.id===id); return e ? e.title : ""; };
   const chains = CHAINS.map(c=>'<div class="flowsec"><h3>'+esc(c.name)+'</h3><div class="none">'+esc(c.when)+'</div><div class="chain">'
@@ -5950,7 +6210,12 @@ function viewFlow(){
         + f.ref.filter(refAttr).map(id=>'<span class="lk"'+refAttr(id)+'>'+esc(refName(id))+'</span>').join('') + '</td></tr>').join('')
     + '</tbody></table></div></div>';
   return '<div class="orgnote">인수인계서 기준으로 정리한 돈과 업무의 흐름입니다. 이름이나 단계를 누르면 해당 업무 상세가 열립니다.</div>'
-    + funds + chains;
+    + '<div class="jump"><button data-jump="sec-funds">재원·통장</button><button data-jump="sec-cards">사업별 카드</button>'
+    + '<button data-jump="sec-req">필요 서류</button><button data-jump="sec-chain">업무 연결도</button></div>'
+    + funds.replace('<div class="flowsec">','<div class="flowsec" id="sec-funds">')
+    + cardSection().replace('<div class="flowsec">','<div class="flowsec" id="sec-cards">')
+    + reqSection()
+    + '<div id="sec-chain"></div>' + chains;
 }
 
 function viewDash(){
@@ -5988,7 +6253,7 @@ function viewDash(){
     + '<div class="dash">'
     + '<div class="panel"><h3>다가오는 30일 <small>'+up.length+'건 · 클릭하면 상세</small></h3>'
       + listOf(up.slice(0,14).map(u=>li(
-          (u.a.ref==="task"?'data-task="':'data-event="')+u.a.id+'"',
+          (u.a.ref==="task"?'data-task="':u.a.ref==="card"?'data-card="':'data-event="')+u.a.id+'"',
           (u.dd===0?"오늘":"D-"+u.dd)+" "+(u.n.getMonth()+1)+"/"+u.n.getDate(),
           u.a.title, u.a.sub)), "임박한 마감 없음")
       + '</div>'
@@ -6328,6 +6593,10 @@ function openTask(id){
         : '<div class="none">미작성 — [편집]에서 단계별로 추가. 처음 해보는 업무면 아래 «작업 기록»에 먼저 남기고 나중에 절차로 올리기</div>')
     + sec("3. 자주 발생하는 이슈 · 주의", (x.traps||[]).length
         ? '<ul class="trap">'+x.traps.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ul>' : '<div class="none">없음</div>')
+    + (reqForTask(x.id).length ? sec("필요 서류", reqForTask(x.id).map(r=>{ const ck = reqChecked(r.id);
+          return '<div class="reqmini"><b>'+esc(r.name)+'</b> <small>'+ck.filter(i=>i<r.items.length).length+'/'+r.items.length+' 준비</small>'
+            + '<ul>'+r.items.map((it,i)=>'<li'+(ck.indexOf(i)>=0?' class="d"':'')+'>'+(it.k?'<span class="rk '+(RQK[it.k]||'')+'">'+esc(it.k)+'</span> ':'')+esc(it.n)+(it.note?' <small>— '+esc(it.note)+'</small>':'')+'</li>').join('')+'</ul></div>'; }).join('')
+          + '<div class="none">체크는 «자금·업무 흐름 → 필요 서류»에서 합니다.</div>') : '')
     + sec("4. 관련 문서 파일명", (x.files||[]).length
         ? '<ul>'+x.files.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ul>' : '<div class="none">미기재 — [편집]에서 서식·대장 파일명 입력</div>')
     + (x.folder ? '<section><b>서버 폴더</b>'
@@ -6892,6 +7161,24 @@ document.addEventListener("click", e=>{
     render(); return; }
   const ec = e.target.closest("[data-ev]");
   if(ec){ evCat=ec.dataset.ev; render(); return; }
+  const jp = e.target.closest("[data-jump]");
+  if(jp){ const el = document.getElementById(jp.dataset.jump); if(el) el.scrollIntoView({behavior:"smooth", block:"start"}); return; }
+  const rc = e.target.closest("[data-reqchk]");
+  if(rc){ DB.reqCheck = DB.reqCheck || {}; const id = rc.dataset.reqchk, i = +rc.dataset.i; let a = (DB.reqCheck[id]||[]).slice();
+    if(rc.checked){ if(a.indexOf(i)<0) a.push(i); } else a = a.filter(x=>x!==i); DB.reqCheck[id] = a;
+    rc.closest(".reqi").classList.toggle("d", rc.checked);
+    const r = REQS().find(x=>x.id===id), sm = rc.closest(".reqset").querySelector(".reqh small");
+    if(r && sm) sm.textContent = a.filter(x=>x<r.items.length).length+"/"+r.items.length+" 준비";
+    saveQuiet(); return; }
+  const rr = e.target.closest("[data-reqreset]");
+  if(rr){ DB.reqCheck = DB.reqCheck || {}; DB.reqCheck[rr.dataset.reqreset] = []; save(); return; }
+  const re2 = e.target.closest("[data-reqedit]");
+  if(re2){ openReq(re2.dataset.reqedit); return; }
+  if(e.target.closest("[data-reqadd]")){ openReq(null); return; }
+  const cdv = e.target.closest("[data-card]");
+  if(cdv){ openCard(cdv.dataset.card); return; }
+  if(e.target.closest("[data-cardadd]")){ openCard(null); return; }
+  if(e.target.closest("[data-cproc]")){ cprocform.elements["steps"].value = cardProc().join("\n"); cprocdlg.showModal(); return; }
   const evv = e.target.closest("[data-event]");
   if(evv){ openEvent(evv.dataset.event); return; }
   const tk = e.target.closest("[data-task]");

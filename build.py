@@ -23,6 +23,9 @@ def build(kind):
         sys.exit(f"{seed_name} 없음 — public 빌드는 먼저 `python anonymize.py` 실행")
     seed = io.open(seed_path, encoding="utf-8").read()
     data = json.loads(seed)  # 문법 오류면 여기서 터짐
+    if kind == "public" and data.pop("cards", None) is not None:
+        # 사업별 카드 목록은 공개본에 절대 넣지 않는다 (끝 4자리라도)
+        seed = json.dumps(data, ensure_ascii=False)
 
     tpl = io.open(TPL, encoding="utf-8").read()
     assert PLACEHOLDER in tpl, f"template.html 에 {PLACEHOLDER} 자리표시자 없음"
@@ -40,6 +43,7 @@ def build(kind):
         out = out.replace('const KEY = "eopmu_bunjang_v2";',
                           'const KEY = "eopmu_bunjang_pub_v2";')
         assert "supabase.co" not in out, "공개본에 Supabase 접속 정보가 들어갔다"
+        assert '"cards":' not in seed, "공개본에 카드 목록이 들어갔다"
 
     dst = os.path.join(BASE, out_name)
     os.makedirs(os.path.dirname(dst), exist_ok=True)

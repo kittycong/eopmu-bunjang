@@ -38,6 +38,9 @@ def main():
     names = {n for n in names if 2 <= len(n) <= 4 and re.fullmatch(r"[가-힣]+", n)
              and n not in {"공통", "다같이", "담당코디", "신입", "미지정", "공석"}}
 
+    # 사업별 카드 목록은 공개본에서 통째로 제거 (끝 4자리만 저장하지만 공개하지 않음)
+    db.pop("cards", None)
+
     # 캡처 사진은 통째로 제거
     for t in db.get("tasks", []):
         t["shots"] = []
