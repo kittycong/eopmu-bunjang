@@ -211,7 +211,81 @@ td.num{text-align:right;color:var(--dim);white-space:nowrap}
 .cell.pad{background:var(--zebra);opacity:.5}
 .cell.today{outline:2px solid var(--keep);outline-offset:-2px}
 .cell>.dnum{font-size:10.5px;color:var(--dim);font-variant-numeric:tabular-nums;margin-bottom:3px;position:sticky;top:0}
-.cell.sun>.dnum{color:var(--warn)}
+.cell.sun>.dnum,.cell.hol>.dnum{color:#d4202b;font-weight:700}
+.cell.hol{background:#fff4f3}
+.hname{display:block;font-size:9.5px;font-weight:600;color:#d4202b;line-height:1.2;word-break:keep-all}
+.ev.moved{border-left-style:dashed}
+.ev .mv{font-size:9px;color:var(--dim);white-space:nowrap}
+.ev.prep{background:transparent;border:1px dashed var(--dim);border-left-width:3px;color:var(--dim)}
+.ev.prep b{font-weight:700;color:var(--ink)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cell.hol{background:#3a2322}}
+/* ── 내 업무 홈 · 메뉴 ── */
+.navmore{margin:4px 0}
+.navmore>summary{cursor:pointer;list-style:none;font-size:10.5px;letter-spacing:.09em;color:var(--nav-dim);font-weight:700;padding:6px 12px;border-top:1px solid var(--nav-line)}
+.navmore>summary::-webkit-details-marker{display:none}
+.navmore>summary::after{content:" ▸"}.navmore[open]>summary::after{content:" ▾"}
+.navmore .navgrp{margin-top:8px}
+.scopesw{display:inline-flex;margin-left:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.scopesw button{border:none;border-radius:0;padding:5px 10px}
+.scopesw button.on{background:var(--accent);color:var(--bg)}
+.mesoon,.tm,.melane{background:var(--card);border:1px solid var(--line);border-radius:10px}
+.mesoon{padding:12px 16px;margin:14px 0}
+.mesoon h3,.mesec,.melane h3{font-size:15px;margin:0 0 6px}
+.mesec{margin:18px 0 8px}
+.mesoon .li{display:flex;gap:12px;padding:6px 0;border-bottom:1px dotted var(--line);cursor:pointer}
+.mesoon .li:last-child{border-bottom:none}
+.mesoon .d{min-width:118px;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.mesoon .d.hot{color:#d4202b;font-weight:700}
+.mesoon .x small{display:block;color:var(--dim);font-size:11px}
+.prepb{font-size:10.5px;border:1px dashed var(--dim);border-radius:4px;padding:0 4px}
+.melanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.melanes.one{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));margin-top:10px}
+.melane{padding:12px;border-top:4px solid var(--dim)}
+.melane.in{border-top-color:var(--in)}.melane.keep{border-top-color:var(--keep)}.melane.out{border-top-color:var(--out)}
+.melane h3 small{font-weight:400;color:var(--dim);font-size:12px}
+.meg{font-size:11.5px;font-weight:700;color:var(--dim);margin:10px 0 4px}
+.mecard{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:6px;cursor:pointer}
+.mecard:hover{border-color:var(--keep)}
+.mecard.warn{border-left:3px solid var(--warn)}
+.mecard .mt{font-weight:600;font-size:13px}
+.mecard .mm{font-size:11px;color:var(--dim);margin-top:2px}
+.mecard .md{font-size:11.5px;margin-top:4px}.mecard .md.soon{color:#d4202b;font-weight:600}
+.mecard .mv{font-size:10px;color:var(--dim);font-weight:400}
+.mecard .mp{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:11px}
+.mecard .mp .pbar{flex:1;height:6px}
+.mecard .mb{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.mecard .mb span{font-size:10.5px;background:var(--chip);border-radius:4px;padding:1px 5px;color:var(--dim)}
+.mecard .mb .bw{background:var(--warn);color:#fff}
+.mecom{margin-top:12px}.mecom>summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--dim)}
+.team{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.tm{padding:10px 12px}.tm .tn small{color:var(--dim)}
+.tm .tr{margin:4px 0;display:flex;gap:4px;flex-wrap:wrap}
+.tm ul{margin:4px 0 0;padding-left:16px;font-size:12px}.tm li{cursor:pointer;margin:2px 0}
+@media (max-width:860px){.melanes{grid-template-columns:1fr}}
+body[data-focus="1"] .content>.bar{display:none}
+.viewtabs{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.viewtabs button{border:none;border-radius:0;padding:6px 12px}.viewtabs button.on{background:var(--accent);color:var(--bg)}
+.evmore{display:none}.cell.open .evmore{display:block}
+.morebtn{display:block;width:100%;font-size:10px;padding:1px 0;margin-top:2px;background:transparent;border:1px dashed var(--line);color:var(--dim);border-radius:4px}
+.cell{max-height:none}.cell.open{max-height:none}
+.meask{background:var(--card);border:1px solid var(--warn);border-radius:10px;padding:10px 16px;margin:14px 0}
+.meask .mah{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.meask h3{margin:0;font-size:15px}.meask h3 small{font-weight:400;color:var(--dim);font-size:12px}
+.meask .maw{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.meask .chip{cursor:pointer}
+.ambg{font-size:12px;background:var(--chip);border-radius:6px;padding:3px 8px}.ambg b{font-weight:600;cursor:pointer}
+.mefold{margin-top:10px;border-top:1px dashed var(--line);padding-top:6px}
+.mefold>summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--dim)}
+/* ── 자금·업무 흐름 ── */
+.flowsec{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.flowsec h3{margin:0 0 4px;font-size:15px}
+.flowsec .none{margin-bottom:8px}
+.chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px;margin:8px 0 4px}
+.step{background:var(--chip);border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.35;max-width:210px;border-left:3px solid var(--keep)}
+.step small{display:block;color:var(--dim);font-size:10.5px}
+.step.link{cursor:pointer}.step.link:hover{outline:1px solid var(--keep)}
+.arrow{align-self:center;color:var(--dim);font-size:14px}
+.ftbl td,.ftbl th{font-size:12px;vertical-align:top}
+.ftbl .lk{cursor:pointer;color:var(--keep);text-decoration:underline;text-decoration-style:dotted;margin-right:6px;white-space:nowrap}
 .ev{font-size:10.2px;line-height:1.3;padding:2px 4px;border-radius:4px;margin-bottom:2px;cursor:pointer;
     background:var(--chip);color:var(--ink);border-left:3px solid var(--dim);
     overflow-wrap:break-word;word-break:keep-all;white-space:normal}
@@ -540,8 +614,15 @@ textarea{resize:vertical;min-height:64px}
 
   <div class="navgrp" id="favGrp" hidden><b>즐겨찾기</b><div id="favList"></div></div>
 
+  <div class="navgrp"><b>내 업무</b>
+    <button class="v on" data-v="me">내 업무 홈</button>
+    <button class="v" data-v="cal">캘린더 (나 · 팀)</button>
+    <button class="v" data-v="doc">인수인계서</button>
+    <button class="v" data-v="flow">자금·업무 흐름</button>
+  </div>
+
+  <details class="navmore" id="navMore"><summary>센터 전체 보기</summary>
   <div class="navgrp"><b>일정</b>
-    <button class="v on" data-v="cal">캘린더</button>
     <button class="v" data-v="events">사업·점검 일정</button>
     <button class="v" data-v="edu">교육 · 수료</button>
   </div>
@@ -550,11 +631,7 @@ textarea{resize:vertical;min-height:64px}
   </div>
   <div class="navgrp"><b>업무</b>
     <button class="v" data-v="card">카드</button>
-    <button class="v" data-v="table">표</button>
-    <button class="v" data-v="shift">AS-IS / TO-BE</button>
-  </div>
-  <div class="navgrp"><b>인수인계</b>
-    <button class="v" data-v="doc">인수인계서</button>
+    <button class="v" data-v="table">표 · AS-IS/TO-BE</button>
   </div>
   <div class="navgrp"><b>조직</b>
     <button class="v" data-v="org">조직도</button>
@@ -566,6 +643,7 @@ textarea{resize:vertical;min-height:64px}
     <button class="v" data-v="contacts">연락처</button>
     <button class="v" data-v="docs">지침·매뉴얼</button>
   </div>
+  </details>
   <div class="navgrp"><b>출력</b>
     <button class="v" data-v="all">전체 출력</button>
     <button id="prt">인쇄</button>
@@ -881,7 +959,7 @@ const SEED = /*__SEED__*/null;
 const KEY = "eopmu_bunjang_v2";
 // 인수인계 진행 상태 기본값 — 구분에서 유도, 이후 사용자가 편집
 const DEFSTAT = {keep:"진행중", out:"인계중", in:"인수중", common:"진행중", tbd:"추가확인", other:"미착수"};
-let DB = load(), view = "cal", filter = "all", query = "", sortKey = "", sortDir = 1, editing = null;
+let DB = load(), view = "me", calScope = "team", filter = "all", query = "", sortKey = "", sortDir = 1, editing = null;
 
 function normalize(db){
   (db.tasks||[]).forEach(t=>{
@@ -1010,6 +1088,23 @@ function copyPath(p){
 const TORDER = {out:0, in:1, tbd:2, keep:3, other:4, common:5};
 const today = () => new Date().toISOString().slice(0,10);
 const byId = id => DB.tasks.filter(t=>t.id===id)[0];
+// 반복 업무는 기간마다 체크를 새로 시작한다 (doneBy[기간키]). 그 외는 기존 done 그대로.
+function periodKey(t, dt){
+  const c = (t.cycle||"") + " " + (t.deadline||""), d = dt || new Date();
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0");
+  if(/매일/.test(c)) return y+"-"+m+"-"+String(d.getDate()).padStart(2,"0");
+  if(/매주|주\s*1회/.test(c)){ const j = new Date(y,0,1); return y+"-W"+Math.ceil(((d-j)/86400000 + j.getDay()+1)/7); }
+  if(/매월|월\s*1회/.test(c)) return y+"-"+m;
+  if(/분기/.test(c)) return y+"-Q"+(Math.floor(d.getMonth()/3)+1);
+  return "";
+}
+function doneOf(t){ const k = periodKey(t); return k ? ((t.doneBy||{})[k]||[]) : (t.done||[]); }
+function setDoneOf(t, arr){ const k = periodKey(t); if(k){ t.doneBy = t.doneBy||{}; t.doneBy[k] = arr; } else t.done = arr; }
+function lastPeriodDone(t){ // 직전 기간 완료 수
+  const k = periodKey(t); if(!k || !t.doneBy) return null;
+  const ks = Object.keys(t.doneBy).filter(x=>x<k).sort(); if(!ks.length) return null;
+  const last = ks[ks.length-1]; return {k:last, n:(t.doneBy[last]||[]).length};
+}
 
 function visible(){
   let list = filter==="all" ? DB.tasks.slice()
@@ -1064,20 +1159,30 @@ function renderCatBar(){
 }
 
 function render(){
+  const onBtn = document.querySelector('nav [data-v].on');
+  if(onBtn && onBtn.closest('details')) onBtn.closest('details').open = true;
   renderCatBar();
   const t = DB.tasks, n = k => t.filter(x=>x.type===k).length;
   const logged = t.filter(x=>(x.steps||[]).length || (x.log||[]).length).length;
-  sub.textContent = DB.meta["소속"] + " · " + DB.meta["작성자"] + " · 기준일 " + DB.meta["기준일"]
+  const focus = ["me","cal","flow"].indexOf(view) >= 0;
+  document.body.dataset.focus = focus ? "1" : "";
+  sub.textContent = focus
+    ? DB.meta["작성자"] + " · 기준일 " + DB.meta["기준일"] + "  |  고유 " + (n("keep")+n("tbd")) + " · 받을 " + n("in") + " · 줄 " + n("out")
+    : DB.meta["소속"] + " · " + DB.meta["작성자"] + " · 기준일 " + DB.meta["기준일"]
     + "  |  전체 " + t.length + "건 — 유지 " + n("keep") + " / 인계 " + n("out") + " / 인수 " + n("in")
     + " / 공통 " + n("common") + " / 미정 " + n("tbd")
     + "  |  절차·기록 있는 업무 " + logged + "건"
     + "  |  센터 일정 " + EVENTS().length + "건 · 지침·매뉴얼 " + DOCS().length + "건"
     + " · 연락처 " + CONTACTS().length + "건";
-  const WB = whoBar();
+  const WB = focus ? "" : whoBar();
+  const TABS = (view==="table"||view==="shift") ? '<div class="viewtabs"><button data-v="table"'+(view==="table"?' class="on"':'')+'>표</button>'
+    + '<button data-v="shift"'+(view==="shift"?' class="on"':'')+'>AS-IS / TO-BE</button></div>' : "";
   if(view==="dash"){ main.innerHTML = WB + viewDash(); return; }
   if(view==="all"){ main.innerHTML = viewAll(); return; }
-  if(view==="shift"){ main.innerHTML = WB + viewShift(); return; }
+  if(view==="shift"){ main.innerHTML = WB + TABS + viewShift(); return; }
   if(view==="cal"){ main.innerHTML = WB + viewCalendar(); return; }
+  if(view==="flow"){ main.innerHTML = WB + viewFlow(); return; }
+  if(view==="me"){ main.innerHTML = WB + viewMe(); return; }
   if(view==="events"){ main.innerHTML = WB + viewEvents(); return; }
   if(view==="docs"){ main.innerHTML = viewDocs(); return; }
   if(view==="contacts"){ main.innerHTML = WB + viewContacts(); return; }
@@ -1090,7 +1195,7 @@ function render(){
   const list = visible();
   if(!list.length){ main.innerHTML = WB + '<div class="empty">해당 업무 없음</div>'; return; }
   main.innerHTML = WB + (view==="card" ? viewCard(list)
-                 : view==="table" ? viewTable(list)
+                 : view==="table" ? TABS + viewTable(list)
                  : view==="doc" ? viewDoc(list)
                  : viewCal(list));
 }
@@ -1101,7 +1206,7 @@ function viewCard(list){
 }
 function card(x){
   const steps = (x.steps||[]).map((s,i)=>{
-    const d = (x.done||[]).indexOf(i) >= 0;
+    const d = doneOf(x).indexOf(i) >= 0;
     return '<label class="step'+(d?" d":"")+'"><input type="checkbox" data-chk="'+x.id+'" data-i="'+i+'"'+(d?" checked":"")+'><span>'+esc(s)+'</span></label>';
   }).join("");
   const logs = (x.log||[]).map((e,i)=>
@@ -1297,7 +1402,8 @@ function parseDeadline(s){
     while((m = re.exec(s))){ const mm=+m[1]; if(mm>=1 && mm<=12) out.push({kind:"yearly", m:mm, d:0}); }
   }
   if(!out.length) out.push({kind:"other", text:s});
-  return out;
+  const seen = new Set();
+  return out.filter(p=>{ const k = JSON.stringify(p); if(seen.has(k)) return false; seen.add(k); return true; });
 }
 /* ─────────── Supabase 공유 저장소 ─────────── */
 // 앱 전체 상태를 단일 문서로 주고받는다. rev 로 동시 편집 충돌을 막고,
@@ -1583,6 +1689,7 @@ const byEid  = id => EVENTS().filter(e=>e.id===id)[0];
 let calY = new Date().getFullYear(), calM = new Date().getMonth()+1, evCat = "all";
 
 // 업무(기한) + 일정(만기)을 한 배열로. kind: 업무는 type, 일정은 cat
+function linkedDup(e){ const t = e.task && byId(e.task); return !!(t && t.deadline); }
 function agenda(){
   const out = [];
   DB.tasks.forEach(t=>{ if(t.deadline) parseDeadline(t.deadline).forEach(p=>
@@ -1590,14 +1697,14 @@ function agenda(){
               owner:t.counterpart, title:t.name,
               sub:TN[t.type]+(t.counterpart?" · "+t.counterpart:"")})); });
   // rule 이 있으면 그것을 우선 (매월/매주/매년)
-  EVENTS().forEach(e=>{ const R = e.rule; if(!R) return;
+  EVENTS().forEach(e=>{ const R = e.rule; if(!R || linkedDup(e)) return;
     const sub2 = e.cat+(e.owner?" · "+e.owner:"")+(e.status&&e.status!=="예정"?" · "+e.status:"");
     const base = {id:e.id, ref:"event", k:e.cat, owner:e.owner, title:e.title, sub:sub2};
     if(R.kind==="weekly") (R.days||[]).forEach(d=>out.push(Object.assign({p:{kind:"weekly", w:d}}, base)));
     else if(R.kind==="months") (R.months||[]).forEach(m=>out.push(Object.assign({p:{kind:"yearly", m:m, d:R.d||0}}, base)));
     else out.push(Object.assign({p:R}, base));
   });
-  EVENTS().forEach(e=>{ if(e.rule) return; const st = parseISO(e.date);
+  EVENTS().forEach(e=>{ if(e.rule || linkedDup(e)) return; const st = parseISO(e.date);
     if(st){ const en = parseISO(e.end) || st;
       let cur = new Date(st.y, st.m-1, st.d), last = new Date(en.y, en.m-1, en.d), i = 0;
       while(cur <= last && i++ < 60){
@@ -1611,35 +1718,69 @@ function agenda(){
     if(e.due) parseDeadline(e.due).forEach(p=>
     out.push({p, id:e.id, ref:"event", k:e.cat, owner:e.owner, title:e.title,
               sub:e.cat+(e.owner?" · "+e.owner:"")+(e.status&&e.status!=="예정"?" · "+e.status:"")})); });
-  EVENTS().forEach(e=>{ if(!e.due && !e.date && !e.rule)
+  EVENTS().forEach(e=>{ if(!e.due && !e.date && !e.rule && !linkedDup(e))
     out.push({p:{kind:"other",text:e.status||"날짜 미상"}, id:e.id, ref:"event", k:e.cat,
               owner:e.owner, title:e.title, sub:e.cat+(e.status?" · "+e.status:"")}); });
   return out;
 }
-const evChip = a => '<div class="ev" data-k="'+esc(a.k)+'" data-'+(a.ref==="task"?"task":"event")+'="'+a.id+'" title="'+esc(a.title+' — '+a.sub)+'">'+esc(a.title)+'</div>';
+const evChip = a => '<div class="ev'+(a.moved?' moved':'')+(a.prep?' prep':'')+'" data-k="'+esc(a.k)+'" data-'+(a.ref==="task"?"task":"event")+'="'+a.id+'"'
+  + ' title="'+esc((a.prep?'[전날 준비] ':'')+a.title+' — '+a.sub+(a.moved?' · 원래 '+a.from+'('+a.why+') → 전 영업일로 앞당김':''))+'">'
+  + (a.prep?'<b>준비</b> ':'')+esc(a.title)+(a.moved?' <span class="mv">↩'+esc(a.from)+'</span>':'')+'</div>';
 
-// 날짜가 토(6)·일(0)요일이면 금요일로 당김 — 회사가 주말 업무가 없어서 주말에 걸리는 건은 항상 직전 금요일에 배치
-function fridayShift(y, m, d){
-  const dt = new Date(y, m-1, d), dow = dt.getDay();
-  if(dow===6) dt.setDate(dt.getDate()-1);
-  else if(dow===0) dt.setDate(dt.getDate()-2);
-  return {y:dt.getFullYear(), m:dt.getMonth()+1, d:dt.getDate()};
+// 한국 공휴일(관공서 공휴일 규정, 대체공휴일 포함). 2026년부터 노동절·제헌절 공휴일.
+// 해가 바뀌면 우주항공청 월력요항을 보고 다음 해 줄을 추가한다.
+const HOLIDAYS = {
+  "2025-01-01":"신정","2025-01-27":"임시공휴일","2025-01-28":"설날 연휴","2025-01-29":"설날","2025-01-30":"설날 연휴",
+  "2025-03-01":"삼일절","2025-03-03":"대체공휴일","2025-05-01":"근로자의 날","2025-05-05":"어린이날·부처님오신날","2025-05-06":"대체공휴일",
+  "2025-06-03":"대통령선거","2025-06-06":"현충일","2025-08-15":"광복절","2025-10-03":"개천절","2025-10-05":"추석 연휴",
+  "2025-10-06":"추석","2025-10-07":"추석 연휴","2025-10-08":"대체공휴일","2025-10-09":"한글날","2025-12-25":"성탄절",
+  "2026-01-01":"신정","2026-02-16":"설날 연휴","2026-02-17":"설날","2026-02-18":"설날 연휴","2026-03-01":"삼일절",
+  "2026-03-02":"대체공휴일","2026-05-01":"노동절","2026-05-05":"어린이날","2026-05-24":"부처님오신날","2026-05-25":"대체공휴일",
+  "2026-06-03":"지방선거","2026-06-06":"현충일","2026-07-17":"제헌절","2026-08-15":"광복절","2026-08-17":"대체공휴일",
+  "2026-09-24":"추석 연휴","2026-09-25":"추석","2026-09-26":"추석 연휴","2026-10-03":"개천절","2026-10-05":"대체공휴일",
+  "2026-10-09":"한글날","2026-12-25":"성탄절",
+  "2027-01-01":"신정","2027-02-06":"설날 연휴","2027-02-07":"설날","2027-02-08":"설날 연휴","2027-02-09":"대체공휴일",
+  "2027-03-01":"삼일절","2027-05-01":"노동절","2027-05-03":"대체공휴일","2027-05-05":"어린이날","2027-05-13":"부처님오신날",
+  "2027-06-06":"현충일","2027-07-17":"제헌절","2027-07-19":"대체공휴일","2027-08-15":"광복절","2027-08-16":"대체공휴일",
+  "2027-09-14":"추석 연휴","2027-09-15":"추석","2027-09-16":"추석 연휴","2027-10-03":"개천절","2027-10-04":"대체공휴일",
+  "2027-10-09":"한글날","2027-10-11":"대체공휴일","2027-12-25":"성탄절","2027-12-27":"대체공휴일"
+};
+const HOLIDAY_YEARS = [2025, 2026, 2027];
+const ymdKey = dt => dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+function offReason(dt){ const w = dt.getDay(); return HOLIDAYS[ymdKey(dt)] || (w===0 ? "일요일" : w===6 ? "토요일" : ""); }
+// 주말·공휴일이면 직전 영업일로 당김 — 급여·신고 등은 쉬는 날 전에 끝내야 하므로
+function prevWorkday(y, m, d){
+  const dt = new Date(y, m-1, d), why = offReason(dt); let i = 0;
+  while(offReason(dt) && i++ < 15) dt.setDate(dt.getDate()-1);
+  return {y:dt.getFullYear(), m:dt.getMonth()+1, d:dt.getDate(), moved:i>0, why, from:m+"/"+d};
 }
+const fridayShift = prevWorkday; // 예전 이름 호환
 // 월 그리드 하나(요일 헤더 + 날짜 칸) HTML — 패널 재사용을 위해 분리. 주말로 떨어지는 항목은 금요일 칸으로 이동시켜 배치
-function calGridHTML(list, y, m){
+function calGridHTML(list, y, m, opt){
+  opt = opt || {};
   const first = new Date(y, m-1, 1).getDay();
   const days = new Date(y, m, 0).getDate();
   const now = new Date(), isNow = now.getFullYear()===y && now.getMonth()+1===m;
   const byDay = Array.from({length:days+1}, ()=>[]); // 1..days 사용, 0번은 미사용
-  const place = (a, ty, tm, td) => { if(ty===y && tm===m && td>=1 && td<=days) byDay[td].push(a); };
+  const place = (a, s) => { if(s.y===y && s.m===m && s.d>=1 && s.d<=days)
+    byDay[s.d].push(s.moved ? Object.assign({}, a, {moved:true, from:s.from, why:s.why}) : a); };
+  const PAY = /급여/;
+  const put = (a, ty, tm, td) => {
+    const s = prevWorkday(ty, tm, td); place(a, s);
+    if(opt.prep && PAY.test(a.title||"")){ // 급여는 지급 전 영업일에 이체 등록·최종 확인
+      const b = new Date(s.y, s.m-1, s.d-1), q = prevWorkday(b.getFullYear(), b.getMonth()+1, b.getDate());
+      place(Object.assign({}, a, {prep:true}), {y:q.y, m:q.m, d:q.d});
+    }
+  };
+  const nx = new Date(y, m, 1), ny = nx.getFullYear(), nm = nx.getMonth()+1; // 다음 달 초가 쉬는 날이면 이번 달로 당겨짐
   list.forEach(a=>{
     const p = a.p;
-    if(p.kind==="date"){ const s = fridayShift(p.y, p.m, p.d); place(a, s.y, s.m, s.d); }
-    else if(p.kind==="monthly"){ const s = fridayShift(y, m, p.d); place(a, s.y, s.m, s.d); }
-    else if(p.kind==="yearly"){ const s = fridayShift(y, p.m, p.d||1); place(a, s.y, s.m, s.d); }
+    if(p.kind==="date") put(a, p.y, p.m, p.d);
+    else if(p.kind==="monthly"){ put(a, y, m, Math.min(p.d, days)); if(p.d<=7) put(a, ny, nm, p.d); }
+    else if(p.kind==="yearly"){ if(p.m===m) put(a, y, m, p.d||1); else if(p.m===nm && (p.d||1)<=7) put(a, ny, nm, p.d||1); }
     else if(p.kind==="weekly"){
-      const w = (p.w===0 || p.w===6) ? 5 : p.w; // 매주 토·일 고정 업무는 매주 금요일로 고정 배치
-      for(let d=1; d<=days; d++) if((first+d-1)%7===w) byDay[d].push(a);
+      const w = (p.w===0 || p.w===6) ? 5 : p.w;
+      for(let d=1; d<=days; d++) if((first+d-1)%7===w) put(a, y, m, d);
     }
   });
   let cells = "";
@@ -1647,21 +1788,26 @@ function calGridHTML(list, y, m){
   for(let d=1; d<=days; d++){
     const dow = (first+d-1)%7;
     const ds = y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
-    cells += '<div class="cell'+(dow===0?' sun':'')+(isNow&&now.getDate()===d?' today':'')+'"'
-      + ' data-newev="'+ds+'" title="빈 곳 클릭 → 이 날짜로 일정 추가">'
-      + '<div class="dnum">'+d+'</div>' + byDay[d].map(evChip).join('') + '</div>';
+    const hn = HOLIDAYS[ds];
+    cells += '<div class="cell'+(dow===0?' sun':'')+(dow===6?' sat':'')+(hn?' hol':'')+(isNow&&now.getDate()===d?' today':'')+'"'
+      + ' data-newev="'+ds+'" title="'+(hn?esc(hn)+' · ':'')+'빈 곳 클릭 → 이 날짜로 일정 추가">'
+      + '<div class="dnum">'+d+(hn?'<span class="hname">'+esc(hn)+'</span>':'')+'</div>'
+      + (byDay[d].length > 3
+          ? byDay[d].slice(0,2).map(evChip).join('') + '<div class="evmore">'+byDay[d].slice(2).map(evChip).join('')+'</div>'
+            + '<button class="morebtn" data-more>+'+(byDay[d].length-2)+'건 더보기</button>'
+          : byDay[d].map(evChip).join('')) + '</div>';
   }
   return '<div class="calscroll"><div class="cal">'
       + ["일","월","화","수","목","금","토"].map((w,i)=>'<div class="dow'+(i===0?' sun':'')+'">'+w+'</div>').join('')
       + cells + '</div></div>';
 }
 // 캘린더 패널 하나(제목 + 그리드 + 매일/기타 스트립)
-function calPanelHTML(title, list, y, m){
+function calPanelHTML(title, list, y, m, opt){
   const daily = list.filter(a=>a.p.kind==="daily");
   const other = list.filter(a=>a.p.kind==="other");
   const strip = (t,arr)=> arr.length ? '<div class="strip"><b>'+t+' ('+arr.length+')</b>'+arr.map(evChip).join('')+'</div>' : '';
   return '<div class="calpanel"><h4 class="calptitle">'+esc(title)+'<small>'+list.length+'건</small></h4>'
-    + calGridHTML(list, y, m)
+    + calGridHTML(list, y, m, opt)
     + strip("매일", daily) + strip("날짜 미상 · 확인 필요", other)
     + '</div>';
 }
@@ -1672,21 +1818,22 @@ function viewCalendar(){
   // 왼쪽: 내 업무만 (ME 가 담당자 중 하나인 항목) — 담당자 칩 필터와 무관하게 항상 "나" 기준
   const mine = every.filter(a=> itemOwners(a).indexOf(ME)>=0);
   // 오른쪽: 전체 회사 — 담당자 칩(전체/특정인 다중선택)으로 추가 좁히기 가능
-  const company = every.filter(passWho);
+  const company = every.filter(passWho).filter(a=> calScope==="all" || isTeamItem(a));
   const lg = (c,t)=>'<span><i style="background:'+c+'"></i>'+t+'</span>';
   const hidden = every.length - company.length;
-  return whoFilterBar(every)
-    + '<div class="calhead">'
+  return '<div class="calhead">'
       + '<button data-cal="-1">◀</button><h3>'+calY+'년 '+calM+'월</h3><button data-cal="1">▶</button>'
       + '<button data-cal="0">오늘</button>'
       + '<button data-cal="-12">◀ 전년</button><button data-cal="12">다음해 ▶</button>'
+      + '<span class="scopesw"><button data-calscope="team"'+(calScope==="team"?' class="on"':'')+'>팀</button>'
+      + '<button data-calscope="all"'+(calScope==="all"?' class="on"':'')+'>센터 전체</button></span>'
       + '<span class="spacer"></span><span class="none">'
       + (hidden ? '담당자 칩 필터로 전체 회사 캘린더에서 '+hidden+'건 숨김 · ' : '')
       + '빈 날짜 칸 클릭 → 그 날짜로 일정 추가</span>'
     + '</div>'
     + '<div class="caldual">'
-      + calPanelHTML('내 업무 캘린더', mine, calY, calM)
-      + calPanelHTML('전체 회사 캘린더', company, calY, calM)
+      + calPanelHTML('내 업무 캘린더', mine, calY, calM, {prep:true})
+      + calPanelHTML(calScope==="all" ? '센터 전체 캘린더' : '사무행정팀 캘린더', company, calY, calM)
     + '</div>'
     + '<div class="legend">'
       + lg("var(--keep)","내 업무 기한") + lg("var(--out)","인계 업무") + lg("var(--in)","인수 업무")
@@ -2001,9 +2148,194 @@ function nextDue(pp, from){
 const DAY = 86400000;
 function upcoming(days){
   const t = new Date(); t.setHours(0,0,0,0);
-  return agenda().map(a=>{ const n = nextDue(a.p, t); return n ? {a, n, dd: Math.round((n-t)/DAY)} : null; })
+  return agenda().map(a=>{ let n = nextDue(a.p, t); if(!n) return null;
+      const s = prevWorkday(n.getFullYear(), n.getMonth()+1, n.getDate()); n = new Date(s.y, s.m-1, s.d);
+      return {a, n, dd: Math.round((n-t)/DAY)}; })
     .filter(x=>x && x.dd>=0 && x.dd<=days)
     .sort((x,y)=>x.n-y.n);
+}
+
+/* ─────────── 내 업무 홈 ─────────── */
+// 사무행정팀 = 나와 같은 부서 + 나에게 업무를 넘겨주는 전임자
+function teamSet(){
+  const me = (DB.people||[]).find(p=>p.name===ME), dept = me ? me.dept : "";
+  const s = new Set((DB.people||[]).filter(p=>dept && p.dept===dept).map(p=>p.name));
+  DB.tasks.filter(t=>t.type==="in").forEach(t=>splitOwner(t.counterpart).forEach(n=>s.add(n)));
+  s.add(ME); return s;
+}
+function isTeamItem(a){
+  const T = teamSet();
+  if(a.ref==="task"){ const t = byId(a.id); return !!t; } // 업무 목록은 모두 사무행정팀 기준으로 작성됨
+  return itemOwners(a).some(o=> T.has(o) || o==="공통" || o==="다같이");
+}
+function isMine(a){
+  if(a.ref==="task"){ const t = byId(a.id); return !!t && ["keep","in","out","common","tbd"].indexOf(t.type)>=0; }
+  const o = splitOwner(a.owner); return o.indexOf(ME)>=0 || o.indexOf("공통")>=0;
+}
+const WD = ["일","월","화","수","목","금","토"];
+function nextDueShifted(t){
+  let best = null; const now = new Date(); now.setHours(0,0,0,0);
+  parseDeadline(t.deadline).forEach(p=>{ const n = nextDue(p, now); if(!n) return;
+    const s = prevWorkday(n.getFullYear(), n.getMonth()+1, n.getDate()), d = new Date(s.y, s.m-1, s.d);
+    if(!best || d < best.d) best = {d, dd:Math.round((d-now)/DAY), moved:s.moved, from:s.from, why:s.why}; });
+  return best;
+}
+function meCard(t){
+  const st = (t.steps||[]).length, dn = doneOf(t).filter(i=>i<st).length, nd = nextDueShifted(t);
+  const pk = periodKey(t), lp = lastPeriodDone(t);
+  const warn = (t.traps||[]).some(x=>/담당 확인|분장표에 없음/.test(x));
+  const badges = [(t.shots||[]).length?'캡처 '+t.shots.length:'', (t.files||[]).length?'문서 '+t.files.length:'',
+    (t.assets||[]).length?'폴더 '+t.assets.length:'', (t.traps||[]).length?'주의 '+t.traps.length:''].filter(Boolean);
+  return '<div class="mecard'+(warn?' warn':'')+'" data-task="'+t.id+'">'
+    + '<div class="mt">'+esc(t.name)+'</div>'
+    + '<div class="mm">'+esc([t.cycle, t.deadline].filter(Boolean).join(' · ') || '주기·기한 미기재')+'</div>'
+    + (nd ? '<div class="md'+(nd.dd<=3?' soon':'')+'">다음 '+(nd.d.getMonth()+1)+'/'+nd.d.getDate()+'('+WD[nd.d.getDay()]+') · D-'+nd.dd
+        + (nd.moved?' <span class="mv">↩'+esc(nd.from)+' '+esc(nd.why)+'</span>':'')+'</div>' : '')
+    + (st ? '<div class="mp"><span class="pbar"><i style="width:'+Math.round(dn/st*100)+'%"></i></span><small>'+(pk?'이번 '+(/W/.test(pk)?'주':/Q/.test(pk)?'분기':pk.length>7?'날':'달')+' ':'절차 ')+dn+'/'+st+'</small></div>'
+        + (lp ? '<div class="mm">지난번('+esc(lp.k)+') '+lp.n+'/'+st+' 완료</div>' : '')
+          : '<div class="mp none">절차 미작성</div>')
+    + (badges.length||warn ? '<div class="mb">'+(warn?'<span class="bw">담당 확인 필요</span>':'')+badges.map(b=>'<span>'+b+'</span>').join('')+'</div>' : '')
+    + '</div>';
+}
+// 담당·범위 확인이 필요한 것 — 국장님께 한 번에 묻기 위함
+const AMBIG = [["i-bipum","k-mulpum","c-somopum"],["c-server","c-serverroom"],["c-changgo","c-center"],["k-bread","o-huwon-mulpum"]];
+function askItems(){
+  const need = DB.tasks.filter(t=> t.type==="tbd" || (t.traps||[]).some(x=>/담당 확인|분장표에 없음/.test(x)));
+  const amb = AMBIG.map(g=>g.map(byId).filter(Boolean)).filter(g=>g.length>1);
+  return {need, amb};
+}
+function copyAsk(){
+  const {need, amb} = askItems();
+  const txt = "[업무 담당·범위 확인 요청] " + (DB.meta["작성자"]||"") + "\n\n1. 담당 확인 필요\n"
+    + need.map((t,i)=>"  "+(i+1)+") "+t.name+(t.counterpart?" (현 "+t.counterpart+")":"")).join("\n")
+    + "\n\n2. 범위가 겹치는 업무 — 합칠지 나눌지\n"
+    + amb.map((g,i)=>"  "+(i+1)+") "+g.map(t=>t.name).join(" / ")).join("\n");
+  const done = () => alert("확인 요청 문구를 복사했습니다. 메신저나 메일에 붙여넣으세요.");
+  if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(txt).then(done, ()=>fallback());
+  else fallback();
+  function fallback(){ const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); done(); }catch(err){ prompt("아래 내용을 복사하세요", txt); } ta.remove(); }
+}
+function meLane(title, sub2, groups, cls){
+  const total = groups.reduce((n,g)=>n+g.list.length,0);
+  return '<div class="melane '+cls+'"><h3>'+esc(title)+' <small>'+total+'건</small></h3><div class="none">'+esc(sub2)+'</div>'
+    + (total ? groups.filter(g=>g.list.length).map(g=> g.fold
+          ? '<details class="mefold"><summary>'+esc(g.label)+' <small>'+g.list.length+'건</small></summary>'+g.list.map(meCard).join('')+'</details>'
+          : (g.label?'<div class="meg">'+esc(g.label)+' · '+g.list.length+'</div>':'') + g.list.map(meCard).join('')).join('')
+        : '<div class="none">없음</div>') + '</div>';
+}
+function viewMe(){
+  const T = DB.tasks, today = new Date(); today.setHours(0,0,0,0);
+  const byType = k => T.filter(t=>t.type===k).sort((a,b)=>(a.prio||9)-(b.prio||9));
+  const groupBy = list => { const m = new Map(); list.forEach(t=>{ const k = t.counterpart||"상대 미정"; if(!m.has(k)) m.set(k,[]); m.get(k).push(t); });
+    return [...m.entries()].sort((a,b)=>b[1].length-a[1].length).map(([k,v])=>({label:k, list:v})); };
+  const ins = byType("in"), outs = byType("out"), keeps = byType("keep").concat(byType("tbd")), com = byType("common");
+  const stepPct = list => { let a=0,b=0; list.forEach(t=>{ const s=(t.steps||[]).length; b+=s; a+=doneOf(t).filter(i=>i<s).length; }); return b?Math.round(a/b*100):0; };
+
+  // 앞으로 2주 챙길 것 (쉬는 날은 전 영업일, 급여는 전날 준비)
+  const up = upcoming(14).filter(u=>isMine(u.a)); const rows = [];
+  up.forEach(u=>{ rows.push({d:u.n, a:u.a});
+    if(/급여/.test(u.a.title)){ const b = new Date(u.n); b.setDate(b.getDate()-1);
+      const q = prevWorkday(b.getFullYear(), b.getMonth()+1, b.getDate()), qd = new Date(q.y, q.m-1, q.d);
+      if(qd >= today) rows.push({d:qd, a:u.a, prep:true}); } });
+  rows.sort((x,y)=>x.d-y.d);
+  const kindOf = a => { if(a.ref!=="task") return a.k||"일정"; const t = byId(a.id); return t ? TN[t.type] : ""; };
+  const soon = rows.length ? rows.map(r=>{ const dd = Math.round((r.d-today)/DAY);
+      return '<div class="li" '+(r.a.ref==="task"?'data-task="':'data-event="')+r.a.id+'">'
+        + '<span class="d'+(dd<=1?' hot':'')+'">'+(dd===0?'오늘':dd===1?'내일':'D-'+dd)+' '+(r.d.getMonth()+1)+'/'+r.d.getDate()+'('+WD[r.d.getDay()]+')</span>'
+        + '<span class="x">'+(r.prep?'<b class="prepb">준비</b> ':'')+esc(r.a.title)+'<small>'+esc(kindOf(r.a))+(r.prep?' · 지급 전날 이체 등록·확인':'')+'</small></span></div>'; }).join('')
+    : '<div class="none">2주 안에 잡힌 일정이 없습니다</div>';
+
+  // 사무행정팀 현황 (나 제외)
+  const TEAM = [...teamSet()].filter(n=>n!==ME);
+  const allUp = upcoming(14);
+  const team = TEAM.map(n=>{
+    const p = (DB.people||[]).find(x=>x.name===n);
+    const giveMe = ins.filter(t=>splitOwner(t.counterpart).indexOf(n)>=0).length;
+    const fromMe = outs.filter(t=>splitOwner(t.counterpart).indexOf(n)>=0).length;
+    const their = allUp.filter(u=>u.a.ref==="event" && splitOwner(u.a.owner).indexOf(n)>=0);
+    return '<div class="tm"><div class="tn"><b>'+esc(n)+'</b> <small>'+esc(p?p.rank:'전임자')+'</small></div>'
+      + '<div class="tr">'+(giveMe?'<span class="chip in">나에게 인계 '+giveMe+'</span>':'')+(fromMe?'<span class="chip out">내가 인계 '+fromMe+'</span>':'')+'</div>'
+      + (their.length ? '<ul>'+their.slice(0,4).map(u=>'<li data-event="'+u.a.id+'">'+(u.n.getMonth()+1)+'/'+u.n.getDate()+' '+esc(u.a.title)+'</li>').join('')
+          +(their.length>4?'<li class="none">외 '+(their.length-4)+'건</li>':'')+'</ul>' : '<div class="none">2주 내 일정 없음</div>')
+      + '</div>'; }).join('');
+
+  const kpi = (label,val,sub2,cls)=>'<div class="kpi '+(cls||'')+'"><b>'+label+'</b><div class="v">'+val+'</div><div class="sub2">'+sub2+'</div></div>';
+  return '<div class="kpis">'
+      + kpi('내 고유 업무', keeps.length+'<small>건</small>', '유지·미정')
+      + kpi('받을 업무', ins.length+'<small>건</small>', '절차 진행 '+stepPct(ins)+'%', ins.length?'warn':'')
+      + kpi('줄 업무', outs.length+'<small>건</small>', '절차 진행 '+stepPct(outs)+'%')
+      + kpi('2주 내 챙길 것', rows.length+'<small>건</small>', '휴일은 전 영업일 기준')
+    + '</div>'
+    + (()=>{ const {need, amb} = askItems(); if(!need.length && !amb.length) return '';
+        return '<div class="meask"><div class="mah"><h3>확인 요청 <small>담당 확인 '+need.length+' · 범위 겹침 '+amb.length+'</small></h3>'
+          + '<button data-copyask>요청 문구 복사</button></div>'
+          + '<div class="maw">'+need.map(t=>'<span class="chip tbd" data-task="'+t.id+'">'+esc(t.name)+'</span>').join('')+'</div>'
+          + (amb.length ? '<div class="maw">'+amb.map(g=>'<span class="ambg">'+g.map(t=>'<b data-task="'+t.id+'">'+esc(t.name)+'</b>').join(' ↔ ')+'</span>').join('')+'</div>' : '')
+          + '</div>'; })()
+    + '<div class="mesoon"><h3>앞으로 2주 내가 챙길 것</h3><div class="list">'+soon+'</div></div>'
+    + '<h3 class="mesec">내 업무 흐름</h3>'
+    + '<div class="melanes">'
+      + meLane('받을 업무', '전임자에게서 넘겨받는 중 — 퇴사 전 확인 우선', groupBy(ins), 'in')
+      + meLane('내 고유 업무', '계속 내가 맡는 업무', [{label:'', list:keeps.filter(t=>!/회계관리/.test(t.name))},
+          {label:'재원별 회계관리', list:keeps.filter(t=>/회계관리/.test(t.name)), fold:true}], 'keep')
+      + meLane('줄 업무', '동료에게 넘기는 중 — 넘길 때까지 내가 백업', groupBy(outs), 'out')
+    + '</div>'
+    + (com.length ? '<details class="mecom"><summary>사무행정팀 공통 업무 '+com.length+'건</summary><div class="melanes one">'
+        + com.map(meCard).join('') + '</div></details>' : '')
+    + '<h3 class="mesec">사무행정팀 현황</h3><div class="team">'+team+'</div>'
+    + '<div class="orgnote">다른 부서 업무와 센터 전체 일정은 왼쪽 메뉴 «센터 전체 보기»에 있습니다.</div>';
+}
+
+/* ─────────── 자금·업무 흐름 ─────────── */
+// 인수인계서(2026.09) 기준. 계좌번호·실명은 넣지 않는다(공개본). ref = 업무/일정 id → 클릭하면 상세.
+const FUNDS = [
+  {src:"서울시 보조금 (IL센터지원사업)", in:"서울시 교부", out:"보조금 재원 직원 인건비", via:"보탬e 인건비 집행 → 예약이체 (서울시 인증서 2번)", ref:["k-seoul","i-geupyeo"]},
+  {src:"구비 보조금 (운영비)", in:"임차료·관리비 월 1,200,000원 / 수용비 분기 2,000,000원", out:"사무실 임차료·관리비, 사무용품", via:"보탬e 집행등록 → 신한은행 구비 운영비 계좌 출금 (인증서 1번)", ref:["k-gubi","i-imcharyo"]},
+  {src:"활동지원사업 (자부담)", in:"활동지원사업 수입", out:"활동지원 재원 급여, 임차료·관리비 보조금 초과분, 해당 직원 단체상해공제", via:"기업은행 예약이체 (인증서 3번)", ref:["i-geupyeo","i-imcharyo","i-dancheban-boheom"]},
+  {src:"후원금", in:"CMS 정기후원 등", out:"후원 재원 급여", via:"기업은행 예약이체 (인증서 3번)", ref:["o-huwon-acc","o-huwon-cms"]},
+  {src:"주택 (가형·다형1·다형2·자율)", in:"주택 보조금", out:"주택 재원 인건비·운영비", via:"보탬e — 재원별 기안 분리", ref:["x-jutaek3","i-geupyeo"]},
+  {src:"자율재원", in:"확인 필요", out:"보조금 급여 직원의 단체상해공제 등", via:"확인 필요", ref:["k-jayul","i-dancheban-boheom"]},
+  {src:"예수금 통장", in:"급여에서 공제한 근로자 부담분 + 사용자 부담분", out:"사회보험료 납부", via:"급여일에 예수금 통장으로 이체", ref:["k-yesugeum","i-geupyeo"]},
+  {src:"퇴직적립금 통장", in:"매월 퇴직적립금", out:"퇴직금 지급", via:"급여일에 퇴직적립금 통장으로 이체", ref:["i-geupyeo"]},
+  {src:"장애인복지기금 · 처우개선비 · 복지일자리", in:"확인 필요", out:"확인 필요", via:"확인 필요", ref:["k-bokjigigum-acc","k-cheowoo-acc","o-bokjiiljari-acc"]}
+];
+const CHAINS = [
+  {name:"월 급여", when:"매월 25일 · 쉬는 날이면 전 영업일, 이체 등록은 그 전날", steps:[
+    {t:"사회보험 고지내역 확인", s:"EDI", ref:"i-geupyeo"},{t:"급여 입력·계산, 보험료 수정", s:"복지종합시스템", ref:"i-geupyeo"},
+    {t:"재원별 급여 기안", s:"결재"},{t:"인건비 집행요청", s:"보탬e"},{t:"예약이체 등록", s:"기업·신한·보탬e"},
+    {t:"급여명세서 발송·증빙", s:"월급봉투"},{t:"원천세·지방소득세 신고", s:"매월 10일", ref:"e-singo-6"},{t:"자금일보 반영", s:"매일", ref:"i-jageumilbo"}]},
+  {name:"월 임차료·관리비", when:"청구서 수신 후", steps:[
+    {t:"세금계산서·명세서 수신", s:"메일·우편"},{t:"집행등록(증빙우선)", s:"보탬e", ref:"i-imcharyo"},{t:"이체실행", s:"인증서 1번"},
+    {t:"초과분 추가 이체", s:"활동지원 통장"},{t:"증빙 전달", s:"활동지원사업 담당"},{t:"자금일보 반영", s:"매일", ref:"i-jageumilbo"}]},
+  {name:"입사·퇴사", when:"발생 시", steps:[
+    {t:"근로계약서 작성·보관", ref:"i-gyeyak"},{t:"단체상해공제 가입·해지", ref:"i-dancheban-boheom"},
+    {t:"사회보험 취득·상실 신고", s:"매월 14일", ref:"i-saboheom-singo"},{t:"급여 일할계산", ref:"i-geupyeo"},{t:"퇴사자 정산", s:"매월 20일", ref:"e-singo-13"}]},
+  {name:"연간", when:"해마다 반복", steps:[
+    {t:"요율·급여지침 확인, 운영비 정산·사업계획서", s:"1월"},{t:"결산", s:"3월 31일", ref:"k-yegyeolsan"},
+    {t:"사회보험 고지 확정 → 정산", s:"4~5월", ref:"i-saboheom-jeongsan"},{t:"정산분 급여 반영", s:"5월 급여"},
+    {t:"단체상해공제 갱신", s:"11월 9일 만료", ref:"i-dancheban-boheom"},{t:"예산", s:"12월 26일", ref:"k-yegyeolsan"}]}
+];
+function refAttr(id){
+  if(!id) return "";
+  if(byId(id)) return ' data-task="'+id+'"';
+  if(EVENTS().some(e=>e.id===id)) return ' data-event="'+id+'"';
+  return "";
+}
+function viewFlow(){
+  const refName = id => { const t = byId(id); if(t) return t.name; const e = EVENTS().find(x=>x.id===id); return e ? e.title : ""; };
+  const chains = CHAINS.map(c=>'<div class="flowsec"><h3>'+esc(c.name)+'</h3><div class="none">'+esc(c.when)+'</div><div class="chain">'
+    + c.steps.map(st=>{ const a = refAttr(st.ref);
+        return '<div class="step'+(a?' link':'')+'"'+a+'>'+esc(st.t)+(st.s?'<small>'+esc(st.s)+'</small>':'')+'</div>'; })
+      .join('<span class="arrow">→</span>') + '</div></div>').join('');
+  const funds = '<div class="flowsec"><h3>재원·통장 지도</h3>'
+    + '<div class="none">돈이 어디서 들어와 무엇에 쓰이고 어떤 경로로 나가는지. 계좌번호는 넣지 않았습니다. «확인 필요»는 인계서에 없는 내용입니다.</div>'
+    + '<div class="tblwrap"><table class="ftbl"><thead><tr><th>재원·통장</th><th>들어오는 돈</th><th>주로 나가는 곳</th><th>집행·이체 경로</th><th>관련 업무</th></tr></thead><tbody>'
+    + FUNDS.map(f=>'<tr><td><b>'+esc(f.src)+'</b></td><td>'+esc(f.in)+'</td><td>'+esc(f.out)+'</td><td>'+esc(f.via)+'</td><td>'
+        + f.ref.filter(refAttr).map(id=>'<span class="lk"'+refAttr(id)+'>'+esc(refName(id))+'</span>').join('') + '</td></tr>').join('')
+    + '</tbody></table></div></div>';
+  return '<div class="orgnote">인수인계서 기준으로 정리한 돈과 업무의 흐름입니다. 이름이나 단계를 누르면 해당 업무 상세가 열립니다.</div>'
+    + funds + chains;
 }
 
 function viewDash(){
@@ -2375,7 +2707,7 @@ function openTask(id){
     + sec("1. 업무 개요", x.desc ? '<div class="desc">'+esc(x.desc)+'</div>' : '<div class="none">미작성</div>')
     + sec("2. 처리 절차", (x.steps||[]).length
         ? (x.steps||[]).map((s,i)=>{
-            const d = (x.done||[]).indexOf(i)>=0;
+            const d = doneOf(x).indexOf(i)>=0;
             return '<label class="step'+(d?" d":"")+'"><input type="checkbox" data-chk="'+x.id+'" data-i="'+i+'"'+(d?" checked":"")+'><span>'+esc(s)+'</span></label>';
           }).join('')
         : '<div class="none">미작성 — [편집]에서 단계별로 추가. 처음 해보는 업무면 아래 «작업 기록»에 먼저 남기고 나중에 절차로 올리기</div>')
@@ -2822,9 +3154,9 @@ document.addEventListener("change", e=>{
   if(dc){ const d = DOCS().filter(x=>x.id===dc.dataset.doc)[0]; if(d){ d.checked = dc.checked; save(); } return; }
   const cb = e.target.closest("[data-chk]"); if(!cb) return;
   const x = byId(cb.dataset.chk), i = +cb.dataset.i; if(!x) return;
-  x.done = x.done||[];
-  if(cb.checked){ if(x.done.indexOf(i)<0) x.done.push(i); }
-  else x.done = x.done.filter(v=>v!==i);
+  let cur = doneOf(x).slice();
+  if(cb.checked){ if(cur.indexOf(i)<0) cur.push(i); } else cur = cur.filter(v=>v!==i);
+  setDoneOf(x, cur);
   save();
 });
 
@@ -2897,6 +3229,11 @@ document.addEventListener("click", e=>{
   if(ce){ openContact(byCid(ce.dataset.ctedit)); return; }
   const cc = e.target.closest("[data-ct]");
   if(cc){ ctCat = cc.dataset.ct; render(); return; }
+  const mb = e.target.closest("[data-more]");
+  if(mb){ const c = mb.closest(".cell"); c.classList.toggle("open"); mb.textContent = c.classList.contains("open") ? "접기" : "+"+c.querySelectorAll(".evmore .ev").length+"건 더보기"; return; }
+  if(e.target.closest("[data-copyask]")){ copyAsk(); return; }
+  const csw = e.target.closest("[data-calscope]");
+  if(csw){ calScope = csw.dataset.calscope; render(); return; }
   const pa = e.target.closest("[data-peradd]");
   if(pa){ openPersonForm(null); return; }
   const pe2 = e.target.closest("[data-peredit]");

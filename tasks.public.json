@@ -1776,7 +1776,8 @@
    "fund": "",
    "note": "",
    "source": "신고 및 보고 시트",
-   "status": "예정"
+   "status": "예정",
+   "task": "o-bokjiiljari-biz"
   },
   {
    "id": "e-singo-4",
@@ -1804,7 +1805,8 @@
    "fund": "",
    "note": "",
    "source": "신고 및 보고 시트",
-   "status": "예정"
+   "status": "예정",
+   "task": "i-geupyeo"
   },
   {
    "id": "e-singo-6",
@@ -1919,20 +1921,6 @@
    "status": "예정"
   },
   {
-   "id": "e-singo-14",
-   "title": "사회보험료정산",
-   "cat": "신고·보고",
-   "detail": "",
-   "due": "5월중",
-   "system": "",
-   "owner": "공통",
-   "prev": "공통",
-   "fund": "",
-   "note": "",
-   "source": "신고 및 보고 시트",
-   "status": "예정"
-  },
-  {
    "id": "e-singo-15",
    "title": "근로소득 간이지급명세서 제출",
    "cat": "신고·보고",
@@ -2014,7 +2002,8 @@
    "fund": "",
    "note": "",
    "source": "신고 및 보고 시트",
-   "status": "예정"
+   "status": "예정",
+   "task": "o-huwon-cms"
   },
   {
    "id": "e-singo-21",
@@ -2028,7 +2017,8 @@
    "fund": "",
    "note": "",
    "source": "신고 및 보고 시트",
-   "status": "예정"
+   "status": "예정",
+   "task": "k-yegyeolsan"
   },
   {
    "id": "e-singo-22",
@@ -2042,7 +2032,8 @@
    "fund": "",
    "note": "",
    "source": "신고 및 보고 시트",
-   "status": "예정"
+   "status": "예정",
+   "task": "k-yegyeolsan"
   },
   {
    "id": "e-singo-23",
@@ -2112,7 +2103,8 @@
    "fund": "운영, 활동지원사업",
    "note": "한국사회복지공제회",
    "source": "보험 및 이용권 시트",
-   "status": "예정"
+   "status": "예정",
+   "task": "i-dancheban-boheom"
   },
   {
    "id": "e-boheom-4",
@@ -2196,7 +2188,8 @@
    "fund": "운영",
    "note": "",
    "source": "보험 및 이용권 시트",
-   "status": "예정"
+   "status": "예정",
+   "task": "i-jadongcha-boheom"
   },
   {
    "id": "e-boheom-10",
@@ -2210,7 +2203,8 @@
    "fund": "운영",
    "note": "",
    "source": "보험 및 이용권 시트",
-   "status": "예정"
+   "status": "예정",
+   "task": "i-jadongcha-boheom"
   },
   {
    "id": "e-boheom-11",
@@ -2364,7 +2358,8 @@
    "fund": "활동지원사업, 운영",
    "note": "",
    "source": "보험 및 이용권 시트",
-   "status": "예정"
+   "status": "예정",
+   "task": "i-timoney"
   },
   {
    "id": "e-boheom-22",
@@ -2431,20 +2426,6 @@
    "system": "",
    "owner": "신입",
    "prev": "신입",
-   "fund": "활동지원사업",
-   "note": "",
-   "source": "보험 및 이용권 시트",
-   "status": "예정"
-  },
-  {
-   "id": "e-boheom-27",
-   "title": "인증서관리",
-   "cat": "보험·구독 만기",
-   "detail": "",
-   "due": "4월 4일",
-   "system": "",
-   "owner": "김O원",
-   "prev": "조O민",
    "fund": "활동지원사업",
    "note": "",
    "source": "보험 및 이용권 시트",
@@ -2521,76 +2502,6 @@
    "status": "확인필요"
   },
   {
-   "id": "e-extra-5",
-   "title": "재물조사",
-   "cat": "내부점검",
-   "detail": "",
-   "due": "연 1회",
-   "system": "",
-   "owner": "",
-   "prev": "",
-   "fund": "",
-   "note": "비품관리 담당이 수행",
-   "source": "직접 입력 — 원본 엑셀에 없음",
-   "status": "예정"
-  },
-  {
-   "id": "e-extra-6",
-   "title": "근무평정",
-   "cat": "내부점검",
-   "detail": "",
-   "due": "연 1회",
-   "system": "",
-   "owner": "",
-   "prev": "",
-   "fund": "",
-   "note": "수습직원은 수습평가로 대체",
-   "source": "직접 입력 — 원본 엑셀에 없음",
-   "status": "예정"
-  },
-  {
-   "id": "e-extra-7",
-   "title": "운영위원회",
-   "cat": "회의",
-   "detail": "",
-   "due": "분기별 1회",
-   "system": "",
-   "owner": "",
-   "prev": "",
-   "fund": "",
-   "note": "자료집 제작·안건정리·회의록",
-   "source": "직접 입력 — 원본 엑셀에 없음",
-   "status": "예정"
-  },
-  {
-   "id": "e-extra-8",
-   "title": "총회",
-   "cat": "회의",
-   "detail": "",
-   "due": "연 1회 이상",
-   "system": "",
-   "owner": "",
-   "prev": "",
-   "fund": "",
-   "note": "자료집 제작·안건정리·회의록",
-   "source": "직접 입력 — 원본 엑셀에 없음",
-   "status": "예정"
-  },
-  {
-   "id": "e-extra-9",
-   "title": "사업체노동력조사 (고용노동부)",
-   "cat": "신고·보고",
-   "detail": "",
-   "due": "매월 12일까지",
-   "system": "",
-   "owner": "",
-   "prev": "",
-   "fund": "",
-   "note": "매월 12일까지 제출",
-   "source": "직접 입력 — 원본 엑셀에 없음",
-   "status": "예정"
-  },
-  {
    "id": "e-oc-q",
    "title": "운영위원회 (분기별)",
    "cat": "회의",
@@ -2614,7 +2525,8 @@
    "fund": "",
    "note": "자료집 제작 · 안건정리 · 회의록. 개최 2주 전 안건 취합 시작",
    "source": "직접 입력",
-   "status": "예정"
+   "status": "예정",
+   "task": "k-unyeongwi"
   },
   {
    "id": "e-pas-oc",
@@ -2659,7 +2571,8 @@
    "fund": "",
    "note": "자료집 제작 · 안건정리 · 회의록. 결산(3월 31일) 전에 개최",
    "source": "직접 입력",
-   "status": "예정"
+   "status": "예정",
+   "task": "c-chonghoe"
   },
   {
    "id": "e-nosa",
@@ -3068,6 +2981,48 @@
    "target": "전 직원",
    "completed": [],
    "certPath": ""
+  },
+  {
+   "cat": "신고·보고",
+   "system": "",
+   "owner": "김O원",
+   "prev": "",
+   "fund": "",
+   "note": "",
+   "source": "인수인계서",
+   "status": "예정",
+   "id": "e-hand-1",
+   "title": "사회보험 요율·급여지침 확인 (연초)",
+   "due": "1월 중",
+   "detail": "건강·고용보험 요율, 식비·명절수당 기준 변경 여부 확인 후 급여에 반영"
+  },
+  {
+   "cat": "신고·보고",
+   "system": "",
+   "owner": "김O원",
+   "prev": "",
+   "fund": "",
+   "note": "",
+   "source": "인수인계서",
+   "status": "예정",
+   "id": "e-hand-2",
+   "title": "전년도 운영비 정산자료·당해 사업계획서 제출",
+   "due": "1월 중",
+   "detail": "구비 임차료·관리비·수용비 보조금 관련"
+  },
+  {
+   "cat": "신고·보고",
+   "system": "",
+   "owner": "김O원",
+   "prev": "",
+   "fund": "",
+   "note": "",
+   "source": "인수인계서",
+   "status": "예정",
+   "id": "e-hand-3",
+   "title": "활동지원사 사회보험 연말정산 착수",
+   "due": "4월 중",
+   "detail": "4월 보험료 고지 확정 후 정산 → 5월 급여(4월분)에 반영"
   }
  ],
  "docs": [
